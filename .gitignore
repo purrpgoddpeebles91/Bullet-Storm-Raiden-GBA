@@ -1,0 +1,7 @@
+game/build/
+*.o
+*.elf
+*.map
+*.sav
+compile_commands.json
+__pycache__/
