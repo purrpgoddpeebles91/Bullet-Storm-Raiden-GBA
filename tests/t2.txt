@@ -1,0 +1,118 @@
+# Debug run (L+R+SELECT on title): forces bosses with SELECT, walks the whole World 1 dream->nightmare route
+wait 60
+hold L+R 5
+hold L+R+SELECT 3
+wait 5
+shot 11_title_debug
+press START
+press A
+wait 5
+press A
+wait 5
+press A
+wait 5
+press DOWN
+press DOWN
+press A
+wait 5
+press START
+wait 120
+press R
+press R
+press R
+wait 5
+shot 12_meter_highlight
+press L
+wait 10
+shot 13_cashin
+press R
+press R
+press R
+press R
+press R
+press L
+hold A 200
+press SELECT
+hold A 230
+shot 14_warning
+hold A 120
+shot 15_miniboss
+hold A 200
+shot 16_miniboss2
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 60
+shot 17_clear
+wait 200
+shot 18_fork
+press DOWN
+wait 5
+shot 18b_fork_dream
+press A
+wait 20
+shot 19_node_merchant
+press A
+wait 10
+shot 19b_merchant_result
+press A
+wait 120
+shot 20_dream_stage
+hold A 500
+shot 21_dream_play
+press SELECT
+hold A 400
+shot 22_teddy
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+shot 23_after_teddy
+wait 250
+press A
+wait 20
+shot 24_node2
+press DOWN
+press DOWN
+press DOWN
+press A
+press A
+wait 120
+shot 25_foundry
+hold A 300
+press SELECT
+hold A 400
+shot 26_mainboss
+hold A+UP 300
+press SELECT
+wait 100
+hold A 200
+shot 27_mainboss2
+press SELECT
+wait 100
+hold A+DOWN 200
+shot 28_mainboss3
+press SELECT
+wait 80
+press SELECT
+wait 80
+shot 29_mainboss_die
+wait 260
+shot 30_world_clear
+press START
+wait 30
+shot 31_workshop
+press DOWN
+press DOWN
+press DOWN
+press A
+wait 5
+shot 32_workshop_unlock

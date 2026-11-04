@@ -1,7 +1,14 @@
-game/build/
-*.o
+# build outputs stay in game/build (ignored) and dist/ (tracked release files)
 *.elf
 *.map
+*.o
 *.sav
-compile_commands.json
+.hark/
 __pycache__/
+compile_commands.json
+game/build/
+game/compile_commands.json
+toolchain-test/build/
+toolchain-test/compile_commands.json
+tools/runrom
+work/

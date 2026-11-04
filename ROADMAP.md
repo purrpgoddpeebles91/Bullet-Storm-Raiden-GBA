@@ -12,8 +12,8 @@ Legend: [x] done, [~] in progress, [ ] planned
 
 ## Milestones
 - [x] v0.1 World 1 vertical slice (forks, meter, shop/events, bosses, save, music)
-- [~] v0.2 Title credits + full GAME SETTINGS menu with live preview
-- [ ] v0.3 Balance pass, boss dialogue, memory fragments, options polish
+- [x] v0.2 Title credits + full GAME SETTINGS menu with live preview
+- [~] v0.3 Balance pass, boss dialogue, memory fragments, options polish
 - [ ] v0.4 Worlds 2-4, more ships, enemies, relics, events
 - [ ] v0.5 Dynamic dream/nightmare SHIFT mid-stage (music + visuals)
 - [ ] Jam build: polished multi-world run with several endings (before Dec 1, 2026)

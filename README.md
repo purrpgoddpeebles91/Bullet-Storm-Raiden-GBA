@@ -4,7 +4,7 @@
 Made for **[GitHub Game Off 2026](https://itch.io/jam/game-off-2026)** (theme: **SHIFT**).
 A game developed and created by **Zachary Peebles**.
 
-![Title screen](screenshots/v0.1/01_title.png) ![Gameplay](screenshots/v0.1/07_gameplay.png) ![Route fork](screenshots/v0.1/18_fork.png)
+![Title screen](screenshots/v0.2/v02_01_title.png) ![Gameplay](screenshots/v0.1/07_gameplay.png) ![Route fork](screenshots/v0.1/18_fork.png)
 
 ## The story
 Milo, a kid with a big imagination, dreams up a squadron to guard his sleep. Then the Nightmare gets in.
@@ -20,8 +20,10 @@ Every stage **shifts** between the grim nightmare and the silly dream fighting b
 - **Game Settings** (v0.2): in-game video and audio options with a live preview.
 - Battery save (SRAM).
 
+![Game Settings, Game Boy shader](screenshots/v0.2/v02_12_shader_gameboy.png) ![CRT shader](screenshots/v0.2/v02_11_shader_crt.png)
+
 ## Play it
-1. Download the newest ROM from [`releases/`](releases/) (currently `releases/v0.1/BulletStormRaiden_v0.1.gba`).
+1. Download the newest ROM from [`releases/`](releases/) (currently `releases/v0.2/BulletStormRaiden_v0.2.gba`).
 2. Open it in any GBA emulator (mGBA recommended, also Delta, RetroArch, Pizza Boy, myBoy) or put it on a flashcart.
 
 | Action | GBA | mGBA keyboard (default) |

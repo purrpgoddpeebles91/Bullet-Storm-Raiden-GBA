@@ -1,0 +1,143 @@
+# v0.2 default settings + perf meter: CPU check through every boss (debug route)
+wait 60
+press START
+press DOWN
+press DOWN
+press A
+wait 10
+press A
+wait 10
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press DOWN
+press RIGHT
+press RIGHT
+press RIGHT
+press B
+press B
+wait 20
+hold L+R 5
+hold L+R+SELECT 3
+wait 5
+press UP
+press UP
+press A
+wait 5
+press A
+wait 5
+press A
+wait 5
+press DOWN
+press DOWN
+press A
+wait 5
+press START
+wait 120
+press R
+press R
+press R
+wait 5
+shot v02_d12_meter_highlight
+press L
+wait 10
+shot v02_d13_cashin
+press R
+press R
+press R
+press R
+press R
+press L
+hold A 200
+press SELECT
+hold A 230
+shot v02_d14_warning
+hold A 120
+shot v02_d15_miniboss
+hold A 200
+shot v02_d16_miniboss2
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 60
+shot v02_d17_clear
+wait 200
+shot v02_d18_fork
+press DOWN
+wait 5
+shot v02_d18b_fork_dream
+press A
+wait 20
+shot v02_d19_node_merchant
+press A
+wait 10
+shot v02_d19b_merchant_result
+press A
+wait 120
+shot v02_d20_dream_stage
+hold A 500
+shot v02_d21_dream_play
+press SELECT
+hold A 400
+shot v02_d22_teddy
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+shot v02_d23_after_teddy
+wait 250
+press A
+wait 20
+shot v02_d24_node2
+press DOWN
+press DOWN
+press DOWN
+press A
+press A
+wait 120
+shot v02_d25_foundry
+hold A 300
+press SELECT
+hold A 400
+shot v02_d26_mainboss
+hold A+UP 300
+press SELECT
+wait 100
+hold A 200
+shot v02_d27_mainboss2
+press SELECT
+wait 100
+hold A+DOWN 200
+shot v02_d28_mainboss3
+press SELECT
+wait 80
+press SELECT
+wait 80
+shot v02_d29_mainboss_die
+wait 260
+shot v02_d30_world_clear
+press START
+wait 30
+shot v02_d31_workshop
+press DOWN
+press DOWN
+press DOWN
+press A
+wait 5
+shot v02_d32_workshop_unlock

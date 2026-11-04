@@ -1,0 +1,197 @@
+# v0.2 audio settings: record ~4 s WAV per variant on the AUDIO page (preview loop: World 1 theme + SFX)
+wait 30
+press START
+press DOWN
+press DOWN
+press A
+wait 10
+press DOWN
+press A
+wait 20
+wait 40
+wav dist/audio/v02_00_default_dspsg_13379.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_01_driver_psg_only.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_02_driver_ds_only.wav
+wait 240
+wavend
+press DOWN
+press LEFT
+press LEFT
+wait 40
+wav dist/audio/v02_03_rate_6689.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_04_rate_10512.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+wait 40
+wav dist/audio/v02_05_rate_18157.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+wait 40
+wav dist/audio/v02_06_rate_31536.wav
+wait 240
+wavend
+press LEFT
+press LEFT
+press LEFT
+press DOWN
+press RIGHT
+wait 40
+wav dist/audio/v02_07_depth_6bit.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_08_depth_4bit.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_09_depth_2bit.wav
+wait 240
+wavend
+press RIGHT
+press DOWN
+press LEFT
+wait 40
+wav dist/audio/v02_10_latency_low.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+wait 40
+wav dist/audio/v02_11_latency_high.wav
+wait 240
+wavend
+press LEFT
+press DOWN
+press RIGHT
+wait 40
+wav dist/audio/v02_12_sync_timer.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_13_sync_free.wav
+wait 240
+wavend
+press RIGHT
+press DOWN
+press RIGHT
+wait 40
+wav dist/audio/v02_14_stereo_mono.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_15_stereo_swap.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_16_stereo_wide.wav
+wait 240
+wavend
+press RIGHT
+press DOWN
+press LEFT
+wait 40
+wav dist/audio/v02_17_tone_bright.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+wait 40
+wav dist/audio/v02_18_tone_warm.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_19_tone_muffled.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+press DOWN
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+wait 40
+wav dist/audio/v02_20_music_vol5.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press DOWN
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+press LEFT
+wait 40
+wav dist/audio/v02_21_sfx_vol0.wav
+wait 240
+wavend
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press RIGHT
+press DOWN
+press RIGHT
+wait 40
+wav dist/audio/v02_22_style_dream.wav
+wait 240
+wavend
+press RIGHT
+wait 40
+wav dist/audio/v02_23_style_nightmare.wav
+wait 240
+wavend
+press RIGHT
+press UP
+press UP
+press UP
+press UP
+press UP
+press UP
+press UP
+press UP
+press UP
+press LEFT
+press LEFT
+wait 40
+wav dist/audio/v02_24_back_to_default.wav
+wait 240
+wavend
+shot v02_41_audio_page_after

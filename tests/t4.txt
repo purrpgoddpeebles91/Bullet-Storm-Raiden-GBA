@@ -1,0 +1,39 @@
+wait 60
+press START
+press A
+wait 5
+press DOWN
+press A
+wait 5
+press LEFT
+wait 20
+shot 47_ship_toaster
+press A
+wait 5
+press DOWN
+press A
+wait 70
+shot 48_dialog
+press START
+wait 120
+hold A 300
+hold A+UP 25
+hold A 300
+shot 49_toaster_play
+hold A+DOWN 50
+hold A 300
+press L
+hold A 300
+shot 50_toaster_play2
+hold A+UP 30
+hold A 600
+hold A+DOWN 30
+hold A 600
+hold A+UP 30
+hold A 600
+shot 51_late
+hold A 1500
+shot 52_maybe_gameover
+press START
+wait 30
+shot 53_workshop_after

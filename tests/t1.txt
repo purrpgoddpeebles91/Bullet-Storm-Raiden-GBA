@@ -1,0 +1,54 @@
+# Fresh save: title -> menus -> intro dialog -> natural play (no debug) until death
+wait 100
+shot 01_title
+press START
+wait 40
+shot 01b_title_menu
+press A
+wait 10
+press DOWN
+wait 5
+shot 02_difficulty
+press A
+wait 10
+shot 03_ship_select
+press A
+wait 10
+press DOWN
+press DOWN
+wait 5
+shot 04_slot_pick
+press A
+wait 80
+shot 05_dialog
+press A
+wait 5
+press A
+wait 60
+press A
+wait 5
+press A
+wait 70
+shot 05b_dialog_nightmare
+press START
+wait 100
+shot 06_stage_intro
+hold A 200
+hold A+UP 30
+hold A 200
+shot 07_gameplay
+hold A+DOWN 40
+hold A 300
+shot 08_gameplay2
+press START
+wait 10
+shot 08b_pause
+press START
+hold A+UP 20
+hold A 400
+shot 09_gameplay3
+hold A+DOWN 20
+hold A 400
+shot 10_gameplay4
+hold A 1500
+shot 10b_gameover

@@ -18,3 +18,8 @@ Every step of building Bullet Storm Raiden, newest last. Dates are Pacific time.
 - Title credits for GitHub Game Off 2026 and Zachary Peebles.
 - GAME SETTINGS menu: in-game video and audio options with live preview.
 - This repository created to track everything.
+
+## 2026-11-04 — v0.2 released
+- Title credits added; full GAME SETTINGS menu with live preview (see CHANGELOG).
+- Every setting verified headless in mGBA and the gbajs browser player; 25 audio captures measured (docs/settings-audio/).
+- Full source, asset generators, tests and web player pushed to this repo.

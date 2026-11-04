@@ -1,0 +1,84 @@
+# Debug run, EXTREME + Paper Dream + LASER slot: nightmare->dream route, gamble event, Moon Sandman
+wait 60
+hold L+R 5
+hold L+R+SELECT 3
+wait 60
+shot 33_title_v2
+press START
+press A
+wait 5
+press DOWN
+press DOWN
+press DOWN
+press A
+wait 5
+press RIGHT
+wait 30
+shot 34_ship_paper
+press A
+wait 5
+press DOWN
+press DOWN
+press DOWN
+press A
+press START
+wait 120
+hold A 600
+shot 35_paper_laser
+press SELECT
+hold A 300
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 300
+shot 36_fork_v2
+press A
+wait 20
+shot 37_gamble
+press A
+wait 10
+shot 38_gamble_result
+press A
+wait 150
+hold A 500
+shot 39_iron_hive
+hold A+UP 300
+shot 40_iron_hive2
+press SELECT
+hold A 400
+shot 41_moth
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 300
+press DOWN
+press A
+wait 20
+shot 42_node_shop
+press DOWN
+press DOWN
+press DOWN
+press A
+wait 150
+hold A 400
+shot 43_candymoon
+press SELECT
+hold A 400
+shot 44_sandman
+hold A+DOWN 30
+press SELECT
+wait 120
+hold A 200
+shot 45_sandman2
+press SELECT
+wait 120
+hold A 200
+shot 46_sandman3
