@@ -160,7 +160,7 @@ $(BUILDDIR)/%.lua.o : %.lua
 
 # Release copy: header fix (title/code/logo/complement checksum) + copy to ../dist
 # ---------------------------------------------------------------------------------
-DIST_ROM := ../dist/BulletStormRaiden_v0.2.gba
+DIST_ROM := ../dist/BulletStormRaiden_v0.3.gba
 .PHONY: dist assets
 assets:
 	python3 ../tools/gen_assets.py

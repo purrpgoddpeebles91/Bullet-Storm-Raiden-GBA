@@ -6,6 +6,9 @@ int g_oam;
 int g_state = -1, g_next_state = ST_TITLE;
 u32 g_frame;
 int g_debug;
+int g_autopilot;
+int g_story_dbg;
+Stats g_stats;
 
 // ---------------------------------------------------------------- rng
 static u32 s_rng = 0x1234567, s_frng = 0x9E3779B9;
@@ -71,6 +74,7 @@ static void enter_state(int s)
     case ST_CLEAR: clear_enter(); break;
     case ST_WORKSHOP: workshop_enter(); break;
     case ST_SETTINGS: settings_enter(); break;
+    case ST_MEMORIES: memories_enter(); break;
     }
 }
 
@@ -79,9 +83,9 @@ int main(void)
     REG_WAITCNT = 0x4317;
     irq_init(NULL);
     REG_DISPCNT = DCNT_BLANK;
-    memcpy32(&tile_mem[4][0], obj_tiles, OBJ_TILE_COUNT * 8);
     txt_init();
     save_load();
+    mem_load();
     settings_load();
     vid_init();
     irq_add(II_VBLANK, vbl_isr);
@@ -106,6 +110,7 @@ int main(void)
         case ST_CLEAR: clear_update(); break;
         case ST_WORKSHOP: workshop_update(); break;
         case ST_SETTINGS: settings_update(); break;
+        case ST_MEMORIES: memories_update(); break;
         }
         int fr = g_set[S_FPS];
         g_render_this = fr == FR_30 ? !(g_frame & 1) : 1;

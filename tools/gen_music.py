@@ -142,6 +142,38 @@ def boss_bass():
 SONGS['BOSS'] = dict(rows=6, ch=[bl, arp_line(BCH, 4, 1), boss_bass(), drums(['k.s.k.s.k.s.kss.'] * 8)],
     duty=(1, 0), env=(0xD2, 0x51), wave=2, loop=1)
 
+# ---------------- v0.3 route / SHIFT variants (same leitmotifs)
+def to_phrygian(ev):
+    # A minor -> A phrygian-ish with a flat 2nd and flat 5th colouring: B->Bb, E->Eb on off-beats feel uneasy
+    out = []
+    for i, (n, l) in enumerate(ev):
+        if n and n % 12 == 11: n -= 1          # B -> Bb
+        elif n and n % 12 == 4 and i % 3 == 1: n -= 1   # some E -> Eb (tritone against A)
+        out.append([n, l])
+    return out
+def whole_tone_arp(chords, octv=4, step=2):
+    ev = []
+    for root, q in chords:
+        r = NOTES[root] + 12 * (octv + 1)
+        cn = [r, r + 4, r + 8, r + 6]
+        for k in range(16 // step): ev.append([cn[k % 4], step])
+    return ev
+# mixed routes: uneasy / surreal - same melody, flattened, slow, wave lead, whole-tone arps, sparse ticks
+SONGS['W1_UNEASY'] = dict(rows=9, ch=[to_phrygian(lead), whole_tone_arp(CHORDS, 4, 2), bass_line(CHORDS, 2, 'drone'),
+    drums(['h.......c.......', '....h.......h...'] * 8)],
+    duty=(3, 1), env=(0x93, 0x43), wave=0, loop=1)
+def e_major(ev):
+    out = []
+    for n, l in ev:
+        if n and n % 12 in (0, 2, 7): n += 1      # C->C#, D->D#, G->G#
+        out.append([n, l])
+    return out
+# boss during a DREAM SHIFT: major mode, bouncy;  during a NIGHTMARE SHIFT: octave down, faster, harsher
+SONGS['BOSS_DREAM'] = dict(rows=6, ch=[staccato(e_major(bl)), e_major(arp_line(BCH, 5, 2)), e_major(boss_bass()), drums(['k.h.h.h.k.h.hhc.'] * 8)],
+    duty=(2, 2), env=(0xC1, 0x61), wave=1, loop=1)
+SONGS['BOSS_NIGHT'] = dict(rows=5, ch=[shift(bl, -12), arp_line(BCH, 3, 1), boss_bass(), drums(['k.k.s.k.k.kss.s.'] * 8)],
+    duty=(0, 0), env=(0xF2, 0x41), wave=2, loop=1)
+
 # ---------------- jingles (no loop)
 SONGS['GAMEOVER'] = dict(rows=8, ch=[parse('A4:4 G4:4 F4:4 E4:4 D#4:4 D4:4 C#4:4 A3:12 -:4'), parse('-:44'), parse('A2:8 F2:8 D2:8 A1:16 -:4'), parse('k:4 -:40')],
     duty=(2, 2), env=(0xC3, 0x40), wave=0, loop=0)
@@ -152,7 +184,7 @@ SONGS['FORK'] = dict(rows=10, ch=[parse('E5:6 D5:2 C5:4 B4:4 A4:6 B4:2 C5:8 D5:6
     parse('C5:16 F4:16 G4:16 A4:16'), parse('A2:16 F2:16 G2:16 A2:16'), parse('-:64')],
     duty=(2, 2), env=(0x93, 0x40), wave=1, loop=1)
 
-ORDER = ['W1', 'W1_DREAM', 'W1_NIGHT', 'BOSS', 'GAMEOVER', 'CLEAR', 'FORK']
+ORDER = ['W1', 'W1_DREAM', 'W1_NIGHT', 'BOSS', 'GAMEOVER', 'CLEAR', 'FORK', 'W1_UNEASY', 'BOSS_DREAM', 'BOSS_NIGHT']
 
 WAVES = [
     [0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10],  # triangle
@@ -237,6 +269,7 @@ SFX = [
     ('COIN', sfx_tones([1976, 2637], 0.04, 30)),
     ('WARNING', sfx_tones([440, 330, 440, 330, 440, 330], 0.12, 40, 0.5)),
     ('ENHIT', sfx_noise(0.03, 30, 2, 0.0, 6)),
+    ('SHIFT', mix(sfx_sweep(300, 1600, 0.35, 45), [0.0] * int(RATE * 0.15) + sfx_tones([1047, 1568, 2093], 0.05, 22, 0.25))),
 ]
 c.append('// SFX: 8-bit signed PCM @ %d Hz' % RATE)
 names = []

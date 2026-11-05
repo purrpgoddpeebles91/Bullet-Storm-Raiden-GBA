@@ -4,7 +4,7 @@
 Made for **[GitHub Game Off 2026](https://itch.io/jam/game-off-2026)** (theme: **SHIFT**).
 A game developed and created by **Zachary Peebles**.
 
-![Title screen](screenshots/v0.2/v02_01_title.png) ![Gameplay](screenshots/v0.1/07_gameplay.png) ![Route fork](screenshots/v0.1/18_fork.png)
+![Green shell player](screenshots/v0.3/web_green_shell.png) ![Gameplay](screenshots/v0.1/07_gameplay.png) ![Route fork](screenshots/v0.1/18_fork.png)
 
 ## The story
 Milo, a kid with a big imagination, dreams up a squadron to guard his sleep. Then the Nightmare gets in.
@@ -18,12 +18,18 @@ Every stage **shifts** between the grim nightmare and the silly dream fighting b
 - **Four difficulties:** Easy, Normal, Hard, and Extreme, an adaptive rank that climbs while you survive.
 - **Original chiptune soundtrack** with dream and nightmare versions of each theme.
 - **Game Settings** (v0.2): in-game video and audio options with a live preview.
+- **Route-driven story** that flips with the forks you take: four World 1 endings, boss dialogue, 12 memory fragments.
+- **SHIFT:** press R to flip the stage between dream and nightmare.
+- **Cartoon outlines** (3X by default) over the original pixel art.
 - Battery save (SRAM).
 
 ![Game Settings, Game Boy shader](screenshots/v0.2/v02_12_shader_gameboy.png) ![CRT shader](screenshots/v0.2/v02_11_shader_crt.png)
 
 ## Play it
-1. Download the newest ROM from [`releases/`](releases/) (currently `releases/v0.2/BulletStormRaiden_v0.2.gba`).
+**In a browser:** https://purrpgoddpeebles91.github.io/Bullet-Storm-Raiden-GBA/
+
+**In an emulator:**
+1. Download the newest ROM from [`releases/`](releases/) (currently `releases/v0.3/BulletStormRaiden_v0.3.gba`).
 2. Open it in any GBA emulator (mGBA recommended, also Delta, RetroArch, Pizza Boy, myBoy) or put it on a flashcart.
 
 | Action | GBA | mGBA keyboard (default) |
@@ -32,7 +38,10 @@ Every stage **shifts** between the grim nightmare and the silly dream fighting b
 | Fire (hold) | A | X |
 | Bomb | B | Z |
 | Cash in power meter | L | A |
+| SHIFT (when the gauge is full) | R | S |
 | Pause | Start | Enter |
+
+**Skins:** `skins/BSR_GreenShell.deltaskin` for Delta on iOS (open it on your iPhone and choose Delta), and `skins/retroarch/` for RetroArch (see its README).
 
 ## Build from source
 Requires the [Wonderful Toolchain](https://wonderful.asie.pl/) with `target-gba` and `target-gba-libtonc`, plus Python 3 + Pillow for the asset generators.
@@ -43,6 +52,18 @@ export PATH=/opt/wonderful/bin:$PATH
 cd game && make clean && make dist   # writes dist/BulletStormRaiden_vX.Y.gba
 ```
 See [`game/README.md`](game/README.md) for the code layout and headless testing.
+
+## Workflows
+**Development round** (every version):
+1. Zach picks the direction from lettered options; decisions go in docs/design.md.
+2. Build the ROM: `cd game && make clean && make dist` (zero warnings).
+3. Test headless with `tools/runrom` + `tests/*.txt` (screenshots, audio captures) and the balance autopilot `tools/balance.py`.
+4. Rebuild the web player: `python3 tools/build_web_player.py dist/BulletStormRaiden_vX.Y.gba` (writes `web/`, the `docs/` Pages player and a single-file HTML), and skins with `python3 tools/build_skins.py`.
+5. Commit to `main`, update CHANGELOG, ROADMAP and DEVLOG, tag `vX.Y`, publish a GitHub release; ROMs live in `releases/vX.Y/`.
+
+**GitHub Actions:** `.github/workflows/build-rom.yml` builds the ROM on every push to `main` that touches `game/` or `tools/`, and uploads it as an artifact.
+
+**GitHub Pages:** the browser player is served from `docs/` on `main`.
 
 ## Project docs
 - [ROADMAP.md](ROADMAP.md): milestones from the jam build to the full game

@@ -14,11 +14,12 @@
 // ---------------------------------------------------------------- states
 enum {
     ST_TITLE, ST_DIFF, ST_SHIP, ST_SLOT, ST_DIALOG, ST_PLAY, ST_FORK, ST_NODE,
-    ST_GAMEOVER, ST_CLEAR, ST_WORKSHOP, ST_SETTINGS
+    ST_GAMEOVER, ST_CLEAR, ST_WORKSHOP, ST_SETTINGS, ST_MEMORIES
 };
 extern int g_state, g_next_state;
 extern u32 g_frame;
 extern int g_debug;
+extern int g_autopilot;     // test pilot (title: hold L+R, press DOWN) - used by the balance scripts
 void set_state(int s);
 
 // ---------------------------------------------------------------- text / bg (text.c)
@@ -84,6 +85,20 @@ typedef struct {
 extern SaveData g_save;
 void save_load(void);
 void save_write(void);
+// v0.3 story progress: separate SRAM block at 0x200 (own magic + version + checksum), so v0.1/v0.2 saves load untouched
+#define NUM_MEM 12
+typedef struct {
+    u32 magic;
+    u8 ver;
+    u8 endings;       // bit per World 1 ending seen (0 NN, 1 ND, 2 DN, 3 DD)
+    u16 shifts;       // SHIFTs triggered, all time
+    u32 mem;          // bit per memory fragment unlocked
+    u16 route_runs[4];// World 1 clears per route combo
+} MemSave;
+extern MemSave g_mem;
+void mem_load(void);
+void mem_save(void);
+int  mem_unlock(int id);     // 1 if newly unlocked (and saved)
 
 // ---------------------------------------------------------------- run / game data
 enum { D_EASY, D_NORMAL, D_HARD, D_EXTREME };
@@ -131,6 +146,10 @@ typedef struct {
     u8 subs_cleared;
     u8 slot1;
     u32 earned;
+    s8 align;                       // v0.3: dream (+) / nightmare (-) alignment from fork picks
+    u8 shift_mask;                  // bit0 dream SHIFT used, bit1 nightmare SHIFT used (this run)
+    u8 new_mem;                     // memory fragment unlocked this run (for the results screen), 255 none
+    u8 mem_runs;                    // memory fragments unlocked during this run
 } Run;
 extern Run R;
 
@@ -159,6 +178,8 @@ void gameover_enter(void);void gameover_update(void);
 void clear_enter(void);   void clear_update(void);
 void shop_enter(void);    void workshop_enter(void); void workshop_update(void);
 void run_finish(int cleared);
+void memories_enter(void); void memories_update(void);
+void dialog_goto(int scene, int next_state);
 extern const char *sub_names[3][3];
 
 // ---------------------------------------------------------------- settings (settings.c)
@@ -166,6 +187,7 @@ enum {
     S_RENDER, S_SHADER, S_SCAN, S_SCALE, S_BRIGHT, S_SAT, S_GHOST, S_SHAKE, S_FLASH, S_FPS, S_ASPECT, S_BULLET, S_METER,
     S_ADRV, S_ARATE, S_CRUSH, S_LAT, S_ASYNC, S_STEREO, S_TONE, S_MVOL, S_SVOL, S_MSTYLE,
     S_AUTOFIRE, S_SWAP, S_HUD,
+    S_CARTOON,            // v0.3 (appended: v0.2 settings blocks keep their indices)
     NUM_SET
 };
 enum { RM_HW, RM_DITHER, RM_LINEDBL, RM_INTERLACE };
@@ -199,6 +221,10 @@ void vid_prepare(void);
 void vid_measure(u32 frame_vbl);
 void vid_upload(void);
 void vid_isr(void);
+extern int g_shift_tint;          // 0 none, 1 dream pastel, 2 nightmare dark (SHIFT)
+extern int g_cur_theme;
+void vid_cartoon_tiles(void);     // copy the OBJ tile variant for the CARTOON setting
+void vid_set_tint(int t);
 
 // sound extras
 extern const u16 snd_rate_hz[6];
@@ -206,3 +232,45 @@ extern int g_vu[2];
 void snd_settings(void);
 void snd_isr(void);
 void music_restyle(void);
+void music_swap(int id);          // switch to another variant of the same leitmotif, keeping the bar position
+
+// ---------------------------------------------------------------- story (story.c)
+enum { VIBE_NEUTRAL, VIBE_NIGHT, VIBE_DREAM, VIBE_MIXED };
+enum { PT_MILO, PT_SHADOW, PT_MERCHANT, PT_VOX, PT_WADDLES, PT_SANDMAN, PT_WARDEN, PT_MOTH, PT_BIGTEDDY, PT_ENGINE, NUM_PT };
+typedef struct { u8 port; const char *text; } Line;
+typedef struct { const Line *l; u8 n; u8 vibe; const char *title; } Scene;
+enum {
+    SC_INTRO, SC_PRE12_N, SC_PRE12_D, SC_PRE13_NN, SC_PRE13_ND, SC_PRE13_DN, SC_PRE13_DD,
+    SC_WARDEN_PRE, SC_WARDEN_POST, SC_MOTH_PRE, SC_MOTH_POST, SC_TEDDY_PRE, SC_TEDDY_POST,
+    SC_ENGINE_PRE_NN, SC_ENGINE_PRE_DN, SC_ENGINE_POST_NN, SC_ENGINE_POST_DN,
+    SC_SAND_PRE_DD, SC_SAND_PRE_ND, SC_SAND_POST_DD, SC_SAND_POST_ND,
+    SC_END_NN, SC_END_ND, SC_END_DN, SC_END_DD, NUM_SC
+};
+extern const Scene scenes[NUM_SC];
+typedef struct { const char *title; const char *epilogue; u8 mem; } Ending;
+extern const Ending endings[4];
+extern const char *const mem_name[NUM_MEM];
+extern const char *const mem_text[NUM_MEM];
+extern const char *const mem_hint[NUM_MEM];
+enum { MEM_GATE, MEM_MOTH, MEM_TEDDY, MEM_FOUNDRY, MEM_CANDY, MEM_END_NN, MEM_END_DD, MEM_END_ND, MEM_END_DN, MEM_SHIFT1, MEM_BOTH, MEM_TRUTH };
+int  story_combo(void);           // 0 NN, 1 ND, 2 DN, 3 DD (forks 1 and 2)
+int  story_vibe(void);            // vibe of the route so far
+int  story_pre_stage(int sub);    // scene shown before sub-level `sub`
+int  story_boss_pre(void);
+int  story_boss_post(void);
+int  story_ending_scene(void);
+const char *story_tagline(void);
+void story_mem_event(int id);     // unlock + remember for the results screen
+// shared dialogue box (between stages and in-stage boss talk)
+void talk_start(int scene);
+int  talk_update(void);           // 1 when the scene is over
+void talk_draw_portrait(void);
+int  talk_scene(void);
+int  talk_line(void);
+extern int g_story_dbg;           // debug runs skip story scenes unless this is on (title: hold L+R, press UP)
+static inline int story_on(void) { return !g_debug || g_story_dbg; }
+extern const char *const pt_name[NUM_PT];
+
+// ---------------------------------------------------------------- test statistics (read by tools/runrom peek)
+typedef struct { u32 magic, frames, hits, bombs, shifts, score, sub, bosses, died, diff, boss_frames[3], stage_frames[3], shields_end; } Stats;
+extern Stats g_stats;

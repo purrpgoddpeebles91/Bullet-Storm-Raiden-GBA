@@ -46,14 +46,17 @@ void run_new(void)
     R.seed = seed; R.diff = diff; R.ship = ship; R.slot1 = slot1;
     rng_seed(seed);
     R.bombs = 2 + g_save.up_bomb;
-    static const u8 sh[4] = { 3, 2, 1, 1 };
+    static const u8 sh[4] = { 4, 3, 3, 2 };   // starting shields (hit points) per difficulty
     R.shields = sh[diff] + g_save.up_shield;
     R.luck = g_save.up_luck;
     R.weapon_lv = 1;
     R.coin_mul = 1;
     R.rank = 20;
     if (ship == SHIP_PENGUIN) R.bombs++;
+    R.new_mem = 255;
     roll_meter();
+    memset(&g_stats, 0, sizeof(g_stats));
+    g_stats.magic = 0x53544154; g_stats.diff = diff;
 }
 
 int pu_maxed(int pu)

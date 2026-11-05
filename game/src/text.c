@@ -4,6 +4,7 @@
 extern const unsigned int sys8Glyphs[192];
 #define MAP0 (se_mem[31])
 s32 g_far_x, g_near_x;
+int g_cur_theme = -1;
 
 void txt_init(void)
 {
@@ -97,7 +98,8 @@ int txt_wrap(int x, int y, int w, const char *s, int pal, int maxchars)
 // ---------------------------------------------------------------- video
 void load_theme(int th)
 {
-    const ThemeGfx *t = &themes[th];
+    g_cur_theme = th;
+    const ThemeGfx *t = &themes_cartoon[g_set[S_CARTOON] & 3][th];   // CARTOON: foreground with baked ink outlines
     memcpy32(&tile_mem[2][0], t->tiles, t->ntiles * 8);
     memcpy32(&se_mem[28][0], t->near, 2048 / 2);
     memcpy32(&se_mem[26][0], t->far, 1024 / 2);

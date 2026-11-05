@@ -23,3 +23,9 @@ Every step of building Bullet Storm Raiden, newest last. Dates are Pacific time.
 - Title credits added; full GAME SETTINGS menu with live preview (see CHANGELOG).
 - Every setting verified headless in mGBA and the gbajs browser player; 25 audio captures measured (docs/settings-audio/).
 - Full source, asset generators, tests and web player pushed to this repo.
+
+## 2026-11-05 — v0.3 released
+- Route-driven story with four World 1 endings, boss dialogue, 12 memory fragments, the SHIFT mechanic and 3X cartoon outlines.
+- Balance tuned with a built-in autopilot (tools/balance.py, results in docs/balance_v03.txt).
+- Web player v3 with the green shell, WebGPU/WebGL upscaling up to 4800p; Delta and RetroArch skins.
+- Player published to GitHub Pages from docs/; Build ROM workflow added.

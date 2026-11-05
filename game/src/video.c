@@ -21,6 +21,8 @@ int g_render_this;               // this loop iteration is shown (30 fps / adapt
 
 // transform state
 static int shader, satk = 16, dither, bullets;
+static int cart, cart_loaded = -1;   // CARTOON level 0..3 and the OBJ tile variant now in VRAM
+int g_shift_tint;                    // SHIFT palette set: 0 none, 1 dream pastel, 2 nightmare dark
 static u8 lutb[32];
 static int scan_active, ghost, mos_bg, mos_obj;
 static u16 scan_tbl[2][162];
@@ -28,7 +30,7 @@ static OBJ_ATTR obj_out[128];
 static u16 ghist[2][128][3];
 static int ghn[2];
 
-#define METER_TILE 480
+#define METER_TILE 1000          // above every sprite tile (OBJ_TILE_COUNT < 990)
 static const char meter_chars[] = "0123456789FPSCU% ";
 
 static inline int cl(int v) { return v < 0 ? 0 : v > 31 ? 31 : v; }
@@ -93,6 +95,33 @@ static void shade(int *pr, int *pg, int *pb)
     *pr = cl(r); *pg = cl(g); *pb = cl(b);
 }
 
+// SHIFT palette sets (before the user's shader, so both combine). Pure black (cartoon ink) is left alone.
+static void tint(int *pr, int *pg, int *pb)
+{
+    int r = *pr, g = *pg, b = *pb;
+    if (g_shift_tint == 1) {          // dream: pastel lift, pink/lilac
+        r = r + ((31 - r) * 7 >> 4) + 1; g = g + ((29 - g) * 5 >> 4); b = b + ((31 - b) * 7 >> 4) + 1;
+    } else {                          // nightmare: drain colour, darken, push red
+        int l = (r * 77 + g * 150 + b * 29) >> 8;
+        r = l + ((r - l) * 3 >> 3); g = l + ((g - l) * 3 >> 3); b = l + ((b - l) * 3 >> 3);
+        r = (r * 13 >> 4) + 3; g = g * 9 >> 4; b = b * 10 >> 4;
+    }
+    *pr = cl(r); *pg = cl(g); *pb = cl(b);
+}
+// cel banding for the CARTOON setting: posterise each channel (2X: 8 levels, 3X: 7 levels + a little punch)
+static void band(int *pr, int *pg, int *pb)
+{
+    int r = *pr, g = *pg, b = *pb;
+    if (cart == 3) {
+        int l = (r * 77 + g * 150 + b * 29) >> 8;
+        r = cl(l + ((r - l) * 19 >> 4)); g = cl(l + ((g - l) * 19 >> 4)); b = cl(l + ((b - l) * 19 >> 4));
+        r = (r * 6 + 15) / 31 * 31 / 6; g = (g * 6 + 15) / 31 * 31 / 6; b = (b * 6 + 15) / 31 * 31 / 6;
+    } else {
+        r = (r * 7 + 15) / 31 * 31 / 7; g = (g * 7 + 15) / 31 * 31 / 7; b = (b * 7 + 15) / 31 * 31 / 7;
+    }
+    *pr = r; *pg = g; *pb = b;
+}
+
 static inline int dq(int x, int pass)
 {
     int v = x * 7, lv = v / 31, fr = v - lv * 31;
@@ -101,11 +130,12 @@ static inline int dq(int x, int pass)
     return lv * 31 / 7;
 }
 
-// mode 0 = shaded, 1 = unshaded (menu text), 2 = high-visibility bullet
-static u16 xf(u16 c, int pass, int mode)
+// mode 0 = shaded, 1 = unshaded (menu text), 2 = high-visibility bullet. fl: 1 = SHIFT tint, 2 = cel band
+static u16 xf(u16 c, int pass, int mode, int fl)
 {
     int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
     if (mode == 2) {
+        if (!(c & 0x7FFF)) return 0;   // cartoon ink stays black
         int l = (r * 77 + g * 150 + b * 29) >> 8;
         if (l > 13) { r = g = b = 31; }
         else if (bullets == 1) { r = 31; g = 4; b = 2; }
@@ -113,6 +143,10 @@ static u16 xf(u16 c, int pass, int mode)
         return r | g << 5 | b << 10;
     }
     if (mode == 0) {
+        if (c & 0x7FFF) {
+            if ((fl & 1) && g_shift_tint) tint(&r, &g, &b);
+            if ((fl & 2) && cart >= 2) band(&r, &g, &b);
+        }
         if (satk != 16) {
             int l = (r * 77 + g * 150 + b * 29) >> 8;
             r = cl(l + (((r - l) * satk) >> 4)); g = cl(l + (((g - l) * satk) >> 4)); b = cl(l + (((b - l) * satk) >> 4));
@@ -134,12 +168,19 @@ static void pal_prepare(void)
         if (bank < 16 && (g_pal_skip & (1u << bank))) mode = 1;
         if (bank == 31 && bullets) mode = 2;
         if (bank == 30 || bank == 13) mode = 1;   // perf meter readable, letterbox bars stay true black
+        // SHIFT tint: stage layers, backdrop, enemies/bosses/effects (player bank 0 and bullets stay true)
+        // cel band: stage layers + every sprite bank except the bullet + perf-meter banks
+        int ob = bank - 16;
+        int fl = 0;
+        if (bank == 8 || bank == 9 || (ob >= 1 && ob <= 6)) fl |= 1;
+        if (bank == 8 || bank == 9 || (ob >= 0 && ob <= 13)) fl |= 2;
         for (int i = 0; i < 16; i++) {
             int idx = bank * 16 + i;
             int m = (idx == 0) ? 0 : mode;   // backdrop always shaded
+            int f = (idx == 0) ? 1 : fl;
             u16 c = g_mpal[idx];
-            pal_out[0][idx] = xf(c, 0, m);
-            pal_out[1][idx] = dither ? xf(c, 1, m) : pal_out[0][idx];
+            pal_out[0][idx] = xf(c, 0, m, f);
+            pal_out[1][idx] = dither ? xf(c, 1, m, f) : pal_out[0][idx];
         }
     }
     upload = 1;
@@ -169,12 +210,29 @@ void vid_settings(void)
             scan_tbl[f][y] = v;
         }
     ghost = g_set[S_GHOST];
+    cart = g_set[S_CARTOON];
+    if (cart != cart_loaded) {
+        cart_loaded = cart;
+        vid_cartoon_tiles();
+        if (g_cur_theme >= 0) load_theme(g_cur_theme);   // foreground tiles: matching outline variant
+    }
     int sc = g_set[S_SCALE];            // 0 native .. 3 = 4x
     mos_bg = sc | (sc << 4); mos_obj = sc | (sc << 4);
     if (g_set[S_RENDER] == RM_LINEDBL) {
         if ((mos_bg >> 4) < 1) mos_bg = (mos_bg & 15) | (1 << 4);
         if ((mos_obj >> 4) < 1) mos_obj = (mos_obj & 15) | (1 << 4);
     }
+    dirty = 0xFFFFFFFF;
+}
+
+void vid_cartoon_tiles(void)
+{
+    memcpy32(&tile_mem[4][0], obj_tiles_cartoon[g_set[S_CARTOON] & 3], OBJ_TILE_COUNT * 8);
+}
+void vid_set_tint(int t)
+{
+    if (t == g_shift_tint) return;
+    g_shift_tint = t;
     dirty = 0xFFFFFFFF;
 }
 

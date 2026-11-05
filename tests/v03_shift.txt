@@ -1,0 +1,51 @@
+# v0.3 SHIFT: debug run (L+R fills the gauge in debug), dream shift then nightmare shift on 1-1, then a shift in a boss fight
+wait 60
+hold L+R 5
+hold L+R+SELECT 3
+wait 20
+press START
+press A
+wait 10
+press DOWN
+press A
+wait 10
+press A
+wait 10
+press A
+wait 5
+press START
+wait 120
+hold A 420
+shot v03_shift_00_before
+hold A 30
+shot v03_shift_01_gauge
+hold L+R 3
+wait 3
+hold A+R 3
+hold A 30
+shot v03_shift_02_dream_start
+hold A 150
+shot v03_shift_03_dream_active
+hold A+UP 20
+hold A 190
+shot v03_shift_04_dream_end_bonus
+hold A 200
+hold L+R 3
+wait 3
+hold A+R 3
+hold A 30
+shot v03_shift_05_nightmare_start
+hold A 150
+shot v03_shift_06_nightmare_active
+hold A 200
+shot v03_shift_07_nightmare_end
+press SELECT
+hold A 330
+shot v03_shift_08_boss_before
+hold L+R 3
+wait 3
+hold A+R 3
+hold A 60
+shot v03_shift_09_boss_shift
+hold A 120
+shot v03_shift_10_boss_shift2

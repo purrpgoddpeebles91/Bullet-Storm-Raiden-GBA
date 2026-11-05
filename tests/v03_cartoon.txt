@@ -1,0 +1,50 @@
+# v0.3 cartoon comparison: run with a save whose CARTOON setting was patched (tools/setsav.py), same inputs each time
+# -> NAME_play (1-1 gameplay) and NAME_boss (Gate Warden), plus 1-2 dream gameplay + Big Teddy. Debug route.
+wait 60
+hold L+R 5
+hold L+R+SELECT 3
+wait 20
+press START
+press A
+wait 10
+press DOWN
+press A
+wait 10
+press A
+wait 10
+press DOWN
+press DOWN
+press A
+wait 5
+press START
+wait 120
+hold A 380
+hold A+UP 20
+hold A 120
+shot cart_play
+press SELECT
+hold A 330
+hold A+DOWN 30
+shot cart_boss
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 80
+press SELECT
+wait 300
+press DOWN
+press A
+wait 20
+press A
+wait 10
+press A
+wait 150
+hold A 300
+hold A+UP 40
+hold A 200
+shot cart_dream
+press SELECT
+hold A 400
+shot cart_teddy

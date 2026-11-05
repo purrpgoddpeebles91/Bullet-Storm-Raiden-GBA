@@ -32,6 +32,7 @@ static const char *const a_style[] = { "AUTO ROUTE", "ALWAYS DREAM", "NIGHTMARE"
 static const char *const g_auto[] = { "OFF (HOLD)", "TOGGLE", "ALWAYS ON" };
 static const char *const g_swap[] = { "A FIRE B BMB", "B FIRE A BMB" };
 static const char *const g_hud[] = { "FULL", "MINIMAL" };
+static const char *const v_cart[] = { "OFF", "1X", "2X", "3X" };
 
 static const OptDef opts[NUM_SET] = {
     { "RENDER MODE", 4, 0, v_render, "HARDWARE, TEMPORAL DITHER, LINE DOUBLE OR INTERLACE.", C_VID },
@@ -60,15 +61,17 @@ static const OptDef opts[NUM_SET] = {
     { "AUTO-FIRE", 3, 0, g_auto, "OFF: HOLD TO FIRE. TOGGLE: TAP ON/OFF. ALWAYS: NONSTOP.", C_GAME },
     { "BUTTONS", 2, 0, g_swap, "SWAP THE FIRE AND BOMB BUTTONS IN STAGES.", C_GAME },
     { "HUD LAYOUT", 2, 0, g_hud, "FULL TWO-LINE HUD OR A MINIMAL ONE-LINE HUD.", C_GAME },
+    { "CARTOON", 4, 3, v_cart, "BAKED INK OUTLINES + CEL BANDING. 1X THIN, 3X BOLD.", C_VID },
 };
 
 // ---------------------------------------------------------------- persistence (SRAM 0x100, separate from v0.1 save)
 #define SRAM ((volatile u8 *)0x0E000000)
 #define SET_OFS 0x100
-static u8 set_ck(void)
+#define V02_NUM_SET 26          // v0.2 stored 26 settings; v0.3 appends new ones (versioned by the count byte)
+static u8 set_ck(int n)
 {
     u8 c = 0xA5;
-    for (int i = 0; i < NUM_SET; i++) c = (u8)((c << 1 | c >> 7) ^ g_set[i]);
+    for (int i = 0; i < n; i++) c = (u8)((c << 1 | c >> 7) ^ g_set[i]);
     return c;
 }
 static void settings_defaults(int cls)
@@ -80,17 +83,20 @@ void settings_save(void)
     SRAM[SET_OFS] = 'B'; SRAM[SET_OFS + 1] = 'S'; SRAM[SET_OFS + 2] = 'R'; SRAM[SET_OFS + 3] = 'S';
     SRAM[SET_OFS + 4] = NUM_SET;
     for (int i = 0; i < NUM_SET; i++) SRAM[SET_OFS + 5 + i] = g_set[i];
-    SRAM[SET_OFS + 5 + NUM_SET] = set_ck();
+    SRAM[SET_OFS + 5 + NUM_SET] = set_ck(NUM_SET);
 }
 void settings_load(void)
 {
     settings_defaults(-1);
-    if (SRAM[SET_OFS] != 'B' || SRAM[SET_OFS + 1] != 'S' || SRAM[SET_OFS + 2] != 'R' || SRAM[SET_OFS + 3] != 'S' || SRAM[SET_OFS + 4] != NUM_SET) {
+    int n = SRAM[SET_OFS + 4];
+    if (SRAM[SET_OFS] != 'B' || SRAM[SET_OFS + 1] != 'S' || SRAM[SET_OFS + 2] != 'R' || SRAM[SET_OFS + 3] != 'S' ||
+        n < V02_NUM_SET || n > NUM_SET) {
         settings_save(); return;
     }
-    for (int i = 0; i < NUM_SET; i++) g_set[i] = SRAM[SET_OFS + 5 + i];
-    if (SRAM[SET_OFS + 5 + NUM_SET] != set_ck()) { settings_defaults(-1); settings_save(); return; }
+    for (int i = 0; i < n; i++) g_set[i] = SRAM[SET_OFS + 5 + i];
+    if (SRAM[SET_OFS + 5 + n] != set_ck(n)) { settings_defaults(-1); settings_save(); return; }
     for (int i = 0; i < NUM_SET; i++) if (g_set[i] >= opts[i].n) g_set[i] = opts[i].def;
+    if (n < NUM_SET) settings_save();   // older block (v0.2): keep its values, new fields take their defaults
 }
 static void apply_all(void) { vid_settings(); snd_settings(); music_restyle(); }
 
@@ -98,9 +104,9 @@ int fire_key(void) { return g_set[S_SWAP] ? KEY_B : KEY_A; }
 int bomb_key(void) { return g_set[S_SWAP] ? KEY_A : KEY_B; }
 
 // ---------------------------------------------------------------- menu
-enum { E_RESET_PAGE = -1, E_BACK = -2, E_VIDEO = -3, E_AUDIO = -4, E_GAME = -5, E_RESET_ALL = -6 };
+enum { E_RESET_PAGE = -1, E_BACK = -2, E_VIDEO = -3, E_AUDIO = -4, E_GAME = -5, E_RESET_ALL = -6, E_HOST = -7 };
 static const s8 page_main[] = { E_VIDEO, E_AUDIO, E_GAME, E_RESET_ALL, E_BACK };
-static const s8 page_vid[] = { S_RENDER, S_SHADER, S_SCAN, S_SCALE, S_BRIGHT, S_SAT, S_GHOST, S_SHAKE, S_FLASH, S_FPS, S_ASPECT, S_BULLET, S_METER, E_RESET_PAGE, E_BACK };
+static const s8 page_vid[] = { S_RENDER, S_SHADER, S_SCAN, S_SCALE, S_BRIGHT, S_SAT, S_GHOST, S_SHAKE, S_FLASH, S_FPS, S_ASPECT, S_BULLET, S_METER, S_CARTOON, E_HOST, E_RESET_PAGE, E_BACK };   // v0.3 entries appended so v0.2 menu paths stay valid
 static const s8 page_aud[] = { S_ADRV, S_ARATE, S_CRUSH, S_LAT, S_ASYNC, S_STEREO, S_TONE, S_MVOL, S_SVOL, S_MSTYLE, E_RESET_PAGE, E_BACK };
 static const s8 page_game[] = { S_AUTOFIRE, S_SWAP, S_HUD, E_RESET_PAGE, E_BACK };
 static const s8 *const pages[4] = { page_main, page_vid, page_aud, page_game };
@@ -119,6 +125,7 @@ static const char *entry_name(int e)
     case E_AUDIO: return "AUDIO";
     case E_GAME: return "GAMEPLAY";
     case E_RESET_ALL: return "RESET ALL";
+    case E_HOST: return "HOST VIDEO";
     }
     return opts[e].name;
 }
@@ -128,7 +135,8 @@ static const char *entry_desc(int e)
     switch (e) {
     case E_RESET_PAGE: return "RESTORE THIS PAGE TO ITS DEFAULTS (PRESS A TWICE).";
     case E_BACK: return "SETTINGS APPLY INSTANTLY AND SAVE TO THE CARTRIDGE.";
-    case E_VIDEO: return "SHADERS, SCANLINES, MOSAIC, BLEND, ASPECT, FPS.";
+    case E_VIDEO: return "CARTOON INK, SHADERS, SCANLINES, MOSAIC, BLEND, ASPECT.";
+    case E_HOST: return "HOST VIDEO: SET IN EMULATOR / WEB PLAYER. NOT IN THE ROM.";
     case E_AUDIO: return "AUDIO DRIVER, SAMPLE RATE, BIT DEPTH, LATENCY, STEREO, TONE.";
     case E_GAME: return "AUTO-FIRE, BUTTON LAYOUT AND HUD LAYOUT.";
     case E_RESET_ALL: return "RESTORE EVERY SETTING TO DEFAULTS (PRESS A TWICE).";
@@ -137,8 +145,7 @@ static const char *entry_desc(int e)
 }
 static const char *entry_value(int e)
 {
-    switch (e) {
-    }
+    if (e == E_HOST) return "EMULATOR";
     if (e >= 0) return opts[e].vals[g_set[e]];
     return "";
 }
@@ -166,7 +173,7 @@ static void draw_list(void)
         if (*v) {
             int len = strlen(v), x = 16 + (13 - len) / 2;
             if (e >= 0) { txt_printo(15, y, "<", s ? P_YELLOW : P_GREY); txt_printo(29, y, ">", s ? P_YELLOW : P_GREY); }
-            txt_printo(x, y, v, s ? P_HI : P_GREEN);
+            txt_printo(x, y, v, e < 0 ? P_GREY : s ? P_HI : P_GREEN);
         }
     }
     // scroll hints

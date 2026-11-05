@@ -82,7 +82,16 @@
 #define SPRPAL_PORT_SHADOW 7
 #define SPR_PORT_TEDDY 445  // 32x32 bank 7 frames 2 (tiles/frame 16)
 #define SPRPAL_PORT_TEDDY 7
-#define OBJ_TILE_COUNT 477
+#define SPR_PORT_VOX 477  // 32x32 bank 10 frames 2 (tiles/frame 16)
+#define SPRPAL_PORT_VOX 10
+#define SPR_PORT_WADDLES 509  // 32x32 bank 10 frames 2 (tiles/frame 16)
+#define SPRPAL_PORT_WADDLES 10
+#define SPR_PORT_SANDMAN 541  // 32x32 bank 10 frames 2 (tiles/frame 16)
+#define SPRPAL_PORT_SANDMAN 10
+#define SPR_SHIFT_ORB 573  // 8x8 bank 10 frames 2 (tiles/frame 1)
+#define SPRPAL_SHIFT_ORB 10
+#define OBJ_TILE_COUNT 575
+extern const u32 *const obj_tiles_cartoon[4];
 extern const u32 obj_tiles[];
 extern const u16 obj_pal[256];
 extern const u16 bg_pal[256];
@@ -112,5 +121,6 @@ extern const u32 ui_tiles[];
 extern const u32 logo_tiles[];
 extern const u16 logo_map[];
 typedef struct { const u32 *tiles; u16 ntiles; const u16 *near; const u16 *far; const u16 *pal; } ThemeGfx;
-extern const ThemeGfx themes[5];
+extern const ThemeGfx themes_cartoon[4][5];
+#define themes (themes_cartoon[0])
 enum { TH_TWILIGHT, TH_HIVE, TH_CLOUDS, TH_FOUNDRY, TH_CANDYMOON };

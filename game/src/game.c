@@ -54,11 +54,26 @@ static int hist_i;
 static int paused;
 
 // level
-enum { P_INTRO, P_WAVES, P_WARN, P_BOSS, P_BOSSDIE, P_CLEAR, P_DEAD };
+enum { P_INTRO, P_WAVES, P_WARN, P_BOSS, P_BOSSDIE, P_CLEAR, P_DEAD, P_TALK };
 static int phase, phase_t, lvl_t, lvl_len, wave_t;
-static const char *ban1, *ban2; static int ban_t, ban_pal;
+static const char *ban1, *ban2, *ban3; static int ban_t, ban_pal;
+static int talk_after, talked_pre, clear_relic;
 static const char *pop; static int pop_t;
-static int bmul, firemul, hpmul;
+static int bmul, firemul, hpmul, bosshp;
+
+// ---------------------------------------------------------------- balance (v0.3 pass, see notes/design.md)
+// per difficulty: enemy bullet speed, fire interval (>256 = slower), enemy HP, boss HP (all /256),
+// wave density base, quiet frames before an enemy may shoot, starting shields are in run.c
+static const u16 BAL_BSPD[4]  = { 190, 220, 250, 270 };
+static const u16 BAL_FIRE[4]  = { 360, 320, 280, 265 };
+static const u16 BAL_EHP[4]   = { 210, 256, 280, 300 };
+static const u16 BAL_BOSS[4]  = { 210, 256, 280, 300 };
+static const u8  BAL_DENS[4]  = { 0, 1, 1, 2 };
+static const u8  BAL_GRACE[4] = { 0, 0, 0, 20 };
+#define BOSS_HP_WARDEN 100
+#define BOSS_HP_MID 150
+#define BOSS_HP_MAIN 480
+#define HITBOX 0x300   // enemy bullet vs player half-size (.8 px)
 
 // boss
 enum { BK_WARDEN, BK_MOTH, BK_TEDDY, BK_MAIN };
@@ -72,6 +87,21 @@ const char *sub_names[3][3] = {
 static const char *boss_names[5] = { "GATE WARDEN", "IRON MOTH", "BIG TEDDY", "NIGHT ENGINE", "MOON SANDMAN" };
 
 int game_paused(void) { return paused; }
+
+// ---------------------------------------------------------------- SHIFT (v0.3)
+// Kills / boss hits / SHIFT orbs fill a gauge. When full, R flips the stage to the OTHER side for 6 s:
+//  DREAM SHIFT (on a nightmare stage): pastel palette, dream music, bullets on screen turn into coins,
+//    enemies fire slow goofy star shots, every kill drops a coin.
+//  NIGHTMARE SHIFT (on a dream stage): dark palette, nightmare music, screen bullets cleared for score,
+//    your shots deal double damage and kills score x3, but enemies fire faster, quicker bullets.
+//  On 1-1 (no route yet) it flips against your alignment (first one is a dream shift). Ends with a bonus.
+#define SHIFT_MAX 100
+#define SHIFT_TIME 360
+static int shift_g, shift_t, shift_dir, shift_kills, shift_frac, shift_alt;
+static char shift_buf[24];
+static int stage_music(void) { return R.route == ROUTE_NIGHT ? MUS_W1_NIGHT : R.route == ROUTE_DREAM ? MUS_W1_DREAM : MUS_W1; }
+static int fight_music(void) { return (phase == P_BOSS || phase == P_TALK || phase == P_WARN) && B.alive ? MUS_BOSS : stage_music(); }
+static void shift_gain(int n) { if (!shift_t) { shift_g += n; if (shift_g > SHIFT_MAX) shift_g = SHIFT_MAX; } }
 
 // ---------------------------------------------------------------- spawning helpers
 static Fx *fx_add(int x, int y, int kind)
@@ -87,6 +117,10 @@ static void eb_fire(s32 x, s32 y, u16 ang, int spd, int type)
     for (int i = 0; i < MAX_EB; i++) if (!eb[i].alive) {
         int s = (spd * bmul) >> 8;
         if (R.bslow) s = s * 225 >> 8;
+        if (shift_t) {
+            if (shift_dir == 1) { s = s * 5 >> 3; type = EB_STAR; }   // dream: slow, goofy stars
+            else s = s * 5 >> 2;                                     // nightmare: faster
+        }
         eb[i].x = x; eb[i].y = y;
         eb[i].vx = (lu_cos(ang) * s) >> 12;
         eb[i].vy = (lu_sin(ang) * s) >> 12;
@@ -130,15 +164,14 @@ static Enemy *en_add(int kind, int x, int y, int mv)
 
 static void banner(const char *a, const char *b, int t, int pal)
 {
-    txt_clear_rows(8, 10);
-    ban1 = a; ban2 = b; ban_t = t; ban_pal = pal;
+    txt_clear_rows(8, 12);
+    ban1 = a; ban2 = b; ban3 = 0; ban_t = t; ban_pal = pal;
 }
 
 // ---------------------------------------------------------------- waves (seeded remix)
 static void spawn_wave(void)
 {
-    static const u8 dd[4] = { 0, 1, 2, 2 };
-    int dens = dd[R.diff] + R.sub + lvl_t / 900;
+    int dens = BAL_DENS[R.diff] + R.sub + lvl_t / 900;
     if (R.diff == D_EXTREME) dens += R.rank / 35;
     int tk = R.sub == 0 ? 0 : (R.route == ROUTE_NIGHT ? 1 : 2);
     const u8 *K = theme_kinds[tk];
@@ -230,12 +263,12 @@ static void boss_spawn(void)
     memset(&B, 0, sizeof(B));
     B.alive = 1; B.x = FX(280); B.y = FX(84);
     int hp;
-    if (R.sub == 0) { B.kind = BK_WARDEN; B.size = 32; B.spr = SPR_MB_WARDEN; B.pal = 2; hp = 100; B.hw = 13; B.hh = 13; B.btype = EB_PELLET; }
-    else if (R.sub == 1 && R.route == ROUTE_NIGHT) { B.kind = BK_MOTH; B.size = 32; B.spr = SPR_MB_MOTH; B.pal = 3; hp = 150; B.hw = 12; B.hh = 12; B.btype = EB_ORB; }
-    else if (R.sub == 1) { B.kind = BK_TEDDY; B.size = 32; B.spr = SPR_MB_TEDDY; B.pal = 4; hp = 150; B.hw = 13; B.hh = 13; B.btype = EB_STAR; }
-    else { B.kind = BK_MAIN; B.size = 64; B.spr = SPR_BOSS_MAIN; B.pal = R.route == ROUTE_DREAM ? 6 : 5; hp = 480; B.hw = 24; B.hh = 28;
+    if (R.sub == 0) { B.kind = BK_WARDEN; B.size = 32; B.spr = SPR_MB_WARDEN; B.pal = 2; hp = BOSS_HP_WARDEN; B.hw = 13; B.hh = 13; B.btype = EB_PELLET; }
+    else if (R.sub == 1 && R.route == ROUTE_NIGHT) { B.kind = BK_MOTH; B.size = 32; B.spr = SPR_MB_MOTH; B.pal = 3; hp = BOSS_HP_MID; B.hw = 12; B.hh = 12; B.btype = EB_ORB; }
+    else if (R.sub == 1) { B.kind = BK_TEDDY; B.size = 32; B.spr = SPR_MB_TEDDY; B.pal = 4; hp = BOSS_HP_MID; B.hw = 13; B.hh = 13; B.btype = EB_STAR; }
+    else { B.kind = BK_MAIN; B.size = 64; B.spr = SPR_BOSS_MAIN; B.pal = R.route == ROUTE_DREAM ? 6 : 5; hp = BOSS_HP_MAIN; B.hw = 24; B.hh = 28;
            B.btype = R.route == ROUTE_DREAM ? EB_STAR : EB_ORB; }
-    B.maxhp = B.hp = (hp * hpmul) >> 8;
+    B.maxhp = B.hp = (hp * bosshp) >> 8;
 }
 
 static void boss_clear_bullets(void)
@@ -253,6 +286,7 @@ static void boss_update(void)
     if (B.flash) B.flash--;
     if (B.inv) B.inv--;
     int fm = firemul;  // >256 = slower fire
+    if (shift_t) fm = shift_dir == 1 ? fm * 3 / 2 : fm * 3 / 4;
     #define EVERY(n) (t % (((n) * fm) >> 8 ? ((n) * fm) >> 8 : 1) == 0)
     int bt = B.btype;
     if (B.x > FX(B.kind == BK_MAIN ? 184 : 196)) { B.x -= 0x100; return; }   // entering
@@ -391,6 +425,7 @@ void game_hammer(void)
 static void player_hit(void)
 {
     if (p_inv || p_dead || g_debug) return;
+    g_stats.hits++;
     if (R.diff == D_EXTREME) R.rank = R.rank > 25 ? R.rank - 25 : 0;
     nohit_t = 0;
     if (R.shields > 0) {
@@ -403,6 +438,8 @@ static void player_hit(void)
         }
     } else {
         p_dead = 1; phase = P_DEAD; phase_t = 0;
+        g_stats.died = 1;
+        if (shift_t) { shift_t = 0; vid_set_tint(0); }
         sfx(SFX_BIGEXPLODE); vid_shake(16);
         for (int k = 0; k < 6; k++) fx_add((px >> 8) + frnd(24) - 12, (py >> 8) + frnd(24) - 12, 0);
         music_stop();
@@ -418,7 +455,10 @@ static void kill_enemy(Enemy *e)
 {
     const EDef *d = &edefs[e->kind];
     e->alive = 0;
-    add_score(d->score);
+    int big = e->kind == EK_HEAVY || e->kind == EK_GUMMY;
+    add_score(shift_t && shift_dir == 2 ? d->score * 3 : d->score);
+    if (shift_t) shift_kills++;
+    shift_gain(big ? 16 : 4);
     fx_add(e->x >> 8, e->y >> 8, 0);
     sfx(e->kind == EK_HEAVY || e->kind == EK_GUMMY ? SFX_BIGEXPLODE : SFX_EXPLODE);
     if (e->kind == EK_HEAVY || e->kind == EK_GUMMY) vid_shake(6);
@@ -426,11 +466,12 @@ static void kill_enemy(Enemy *e)
     // revenge bullets from nightmare mines on hard+
     if (e->kind == EK_MINE && R.diff >= D_HARD) ring(e->x, e->y, 6, frng(), 0x100, EB_PELLET);
     if (e->drop == 1) item_add(e->x, e->y, 0);
-    else if (e->drop == 3) { item_add(e->x, e->y, 0); item_add(e->x + FX(8), e->y - FX(6), 1); item_add(e->x - FX(6), e->y + FX(8), 1); }
+    else if (e->drop == 3) { item_add(e->x, e->y, 0); item_add(e->x + FX(8), e->y - FX(6), 1); item_add(e->x - FX(6), e->y + FX(8), big && !shift_t ? 2 : 1); }
     else {
         int r = rnd(100);
         if (r < 3 + R.luck * 2) item_add(e->x, e->y, 0);
-        else if (r < 18 + R.luck) item_add(e->x, e->y, 1);
+        else if (r < 18 + R.luck || (shift_t && shift_dir == 1)) item_add(e->x, e->y, 1);
+        else if (r >= 98 && !shift_t) item_add(e->x, e->y, 2);   // rare SHIFT orb
     }
 }
 
@@ -449,14 +490,18 @@ void game_start_sublevel(void)
     p_inv = 90; p_shot_t = 0; p_msl_t = 0; p_dead = 0; bomb_cd = 0; flash_t = 0; paused = 0; nohit_t = 0;
     phase = P_INTRO; phase_t = 0; lvl_t = 0; wave_t = 90;
     lvl_len = 2700 + R.sub * 300;
-    static const u16 bm[4] = { 205, 256, 290, 300 }, fm[4] = { 330, 256, 228, 228 }, hm[4] = { 210, 256, 280, 300 };
-    bmul = bm[R.diff]; firemul = fm[R.diff]; hpmul = hm[R.diff];
+    bmul = BAL_BSPD[R.diff]; firemul = BAL_FIRE[R.diff]; hpmul = BAL_EHP[R.diff]; bosshp = BAL_BOSS[R.diff];
     static char stg[24];
     strcpy(stg, "STAGE 1-1");
     stg[8] = '1' + R.sub;
     banner(stg, sub_names[R.sub][R.route], 150, R.route == ROUTE_NIGHT ? P_RED : R.route == ROUTE_DREAM ? P_PINK : P_CYAN);
-    music_play(R.route == ROUTE_NIGHT ? MUS_W1_NIGHT : R.route == ROUTE_DREAM ? MUS_W1_DREAM : MUS_W1);
+    ban3 = story_tagline();
+    music_play(stage_music());
     g_near_x = 0;
+    shift_t = 0; shift_frac = 0; vid_set_tint(0);
+    talked_pre = 0; talk_after = 0;
+    if (R.sub == 2) story_mem_event(R.route == ROUTE_NIGHT ? MEM_FOUNDRY : MEM_CANDY);
+    g_stats.sub = R.sub;
 }
 
 // ---------------------------------------------------------------- HUD
@@ -487,6 +532,23 @@ void game_draw_hud(void)
     if (R.diff == D_EXTREME) { txt_printo(27, 1, "R", P_RED); txt_num(28, 1, R.rank > 99 ? 99 : R.rank, 2, P_RED, 1); }
     else if (R.nrelics) { txt_printo(27, 1, "*", P_GREEN); txt_num(28, 1, R.nrelics, 1, P_GREEN, 1); }
 meter:
+    // SHIFT gauge (row 2, right): fills from kills / boss hits / orbs; "SHIFT" blinks when R is ready
+    if (shift_t) {
+        txt_print(24, 2, shift_dir == 1 ? "DREAM" : "NIGHT", shift_dir == 1 ? P_PINK : P_RED);
+        int c = (shift_t * 5 + SHIFT_TIME - 1) / SHIFT_TIME;
+        for (int i = 0; i < 1; i++) txt_put(29, 2, (FONT_T + '0' + c - 32) | (P_WHITE << 12));
+    } else if (shift_g >= SHIFT_MAX) {
+        txt_print(24, 2, (g_frame & 16) ? "SHIFT" : "  R! ", P_PURPLE);
+        txt_put(29, 2, 0);
+    } else {
+        txt_print(24, 2, "S", P_PURPLE);
+        for (int i = 0; i < 5; i++) {
+            int v = shift_g * 10 / SHIFT_MAX - i * 2;
+            int tl = v >= 2 ? UI_BAR_FULL : v == 1 ? UI_BAR_HALF : UI_BAR_EMPTY;
+            txt_put(25 + i, 2, (UI_BASE + tl) | (P_UI << 12));
+        }
+    }
+    if (phase == P_TALK) return;
     // power meter (row 19)
     txt_fill(0, 19, 30, 1, FONT_O);
     for (int s = 0; s < 7; s++) {
@@ -498,19 +560,20 @@ meter:
     // boss bar (row 2)
     if (B.alive && phase == P_BOSS) {
         txt_print(0, 2, "BOSS", P_RED);
-        int cells = 20, fill = B.hp * cells * 2 / B.maxhp;
+        int cells = 18, fill = B.hp * cells * 2 / B.maxhp;
         for (int i = 0; i < cells; i++) {
             int v = fill - i * 2;
             int tl = v >= 2 ? UI_BAR_FULL : v == 1 ? UI_BAR_HALF : UI_BAR_EMPTY;
             txt_put(5 + i, 2, (UI_BASE + tl) | (P_UI << 12));
         }
-    } else txt_clear_rows(2, 2);
+    } else { for (int i = 0; i < 24; i++) txt_put(i, 2, 0); }
     // banners
     if (ban_t > 0) {
-        if (--ban_t == 0) txt_clear_rows(8, 10);
+        if (--ban_t == 0) txt_clear_rows(8, 12);
         else {
             if (ban1) txt_center(8, ban1, ban_pal);
             if (ban2) txt_center(10, ban2, P_WHITE);
+            if (ban3) txt_center(12, ban3, P_GREY);
         }
     }
     if (pop_t > 0) {
@@ -551,12 +614,115 @@ static int fire_down(void)
     }
     return key_is_down(fire_key());
 }
+// ---------------------------------------------------------------- SHIFT start / end
+static void shift_start(void)
+{
+    int base = R.route;
+    if (base == ROUTE_NONE) base = R.align > 0 ? ROUTE_DREAM : R.align < 0 ? ROUTE_NIGHT : ((shift_alt++ & 1) ? ROUTE_DREAM : ROUTE_NIGHT);
+    shift_dir = base == ROUTE_NIGHT ? 1 : 2;      // flip to the other side
+    shift_t = SHIFT_TIME; shift_g = 0; shift_kills = 0;
+    vid_set_tint(shift_dir);
+    sfx(SFX_SHIFT); flash_t = 6; vid_shake(6);
+    int conv = 0;
+    for (int i = 0; i < MAX_EB; i++) if (eb[i].alive) {
+        eb[i].alive = 0;
+        if (shift_dir == 1 && conv < 6 && (i & 1)) { item_add(eb[i].x, eb[i].y, 1); conv++; }   // candy!
+        else { add_score(20); if (frnd(3) == 0) fx_add(eb[i].x >> 8, eb[i].y >> 8, 1); }
+    }
+    music_swap(fight_music() == MUS_BOSS ? (shift_dir == 1 ? MUS_BOSS_DREAM : MUS_BOSS_NIGHT) : (shift_dir == 1 ? MUS_W1_DREAM : MUS_W1_NIGHT));
+    if (shift_dir == 1) banner("DREAM SHIFT!", "BULLETS TO CANDY", 90, P_PINK);
+    else banner("NIGHTMARE SHIFT!", "DOUBLE DAMAGE  SCORE X3", 90, P_RED);
+    if (R.diff == D_EXTREME && shift_dir == 2) R.rank = R.rank < 95 ? R.rank + 5 : 100;
+    R.shift_mask |= shift_dir;
+    g_stats.shifts++;
+    if (g_mem.shifts < 65535) g_mem.shifts++;
+    mem_save();
+    story_mem_event(MEM_SHIFT1);
+    if (R.shift_mask == 3) story_mem_event(MEM_BOTH);
+}
+static void shift_end(int bonus)
+{
+    if (!shift_t) return;
+    shift_t = 0;
+    vid_set_tint(0);
+    if (!bonus) return;
+    music_swap(fight_music());
+    u32 b = 1000 + shift_kills * (shift_dir == 1 ? 100 : 300);
+    add_score(b);
+    if (shift_dir == 2 && shift_kills >= 8) item_add(px + FX(40), py, 0);   // nightmare payout: a capsule
+    strcpy(shift_buf, "SHIFT BONUS +");
+    int n = 13; char t[8]; int m = 0; u32 v = R.x2 ? b * 2 : b;
+    do { t[m++] = '0' + v % 10; v /= 10; } while (v);
+    while (m) shift_buf[n++] = t[--m];
+    shift_buf[n] = 0;
+    pop = shift_buf; pop_t = 90; txt_clear_rows(17, 17);
+    sfx(SFX_COIN); flash_t = 4;
+}
+
+// ---------------------------------------------------------------- test autopilot (balance verification)
+// A deliberately imperfect pilot: re-plans every 4 frames (reaction lag), looks 14 frames ahead with a
+// 5 px safety margin, holds fire, panic-bombs when every move is already unsafe, cashes in the meter
+// greedily. Used by tests/v03_balance_*.txt to compare difficulties on many seeds; not shown to players.
+// g_autopilot 1 = "skilled" (plans every 4 frames, 14-frame look-ahead, 5 px margin)
+//             2 = "novice"  (plans every 8 frames, 7-frame look-ahead, 3 px margin, bombs late)
+static int ap_dx, ap_dy, ap_bomb;
+static void autopilot(int spd)
+{
+    ap_bomb = 0;
+    int nov = g_autopilot == 2;
+    int LA = nov ? 7 : 14, MG = nov ? FX(3) : FX(5);
+    if (g_frame & (nov ? 7 : 3)) return;
+    int best = 0x7fffffff, bdx = 0, bdy = 0, minrisk = 0x7fffffff;
+    int ty = py, tx = FX(56);
+    // aim: nearest enemy / boss ahead
+    s32 bd = 0x7fffffff;
+    if (B.alive && phase == P_BOSS) { ty = B.y; tx = FX(70); }
+    else for (int k = 0; k < MAX_EN; k++) if (en[k].alive && en[k].x > px && en[k].x < FX(236)) {
+        s32 d = ABS(en[k].x - px) + ABS(en[k].y - py) * 2;
+        if (d < bd) { bd = d; ty = en[k].y; }
+    }
+    for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+        int risk = 0;
+        for (int k = 1; k <= LA; k++) {
+            s32 x = px + dx * spd * k, y = py + dy * spd * k;
+            if (x < FX(8)) x = FX(8);
+            if (x > FX(228)) x = FX(228);
+            if (y < FX(22)) y = FX(22);
+            if (y > FX(144)) y = FX(144);
+            int w = (LA + 1 - k) * (LA + 1 - k);
+            for (int i = 0; i < MAX_EB; i++) if (eb[i].alive) {
+                s32 bx = eb[i].x + eb[i].vx * k, by = eb[i].y + eb[i].vy * k;
+                if (ABS(bx - x) < MG && ABS(by - y) < MG) risk += w * 4;
+            }
+            for (int i = 0; i < MAX_EN; i++) if (en[i].alive) {
+                const EDef *d = &edefs[en[i].kind];
+                if (ABS(en[i].x + en[i].vx * k - x) < FX(d->hw + 5) && ABS(en[i].y - y) < FX(d->hh + 5)) risk += w * 2;
+            }
+            if (B.alive && ABS(B.x - x) < FX(B.hw + 6) && ABS(B.y - y) < FX(B.hh + 6)) risk += w * 3;
+        }
+        s32 nx = px + dx * spd * 6, ny = py + dy * spd * 6;
+        int cost = risk * 64 + (ABS(nx - tx) >> 8) * 2 + (ABS(ny - ty) >> 8) * 3;
+        if (ny < FX(30) || ny > FX(136)) cost += 40;
+        if (risk < minrisk) minrisk = risk;
+        if (cost < best) { best = cost; bdx = dx; bdy = dy; }
+    }
+    ap_dx = bdx; ap_dy = bdy;
+    if (minrisk >= (LA - 1) * (LA - 1) * 4 * (nov ? 2 : 1) && R.bombs && !bomb_cd && !p_inv) ap_bomb = 1;
+}
+
 static void update_player(void)
 {
     if (key_hit(fire_key())) fire_toggle ^= 1;
     const ShipDef *sd = &ship_defs[R.ship];
     int spd = sd->speed + R.speed_lv * 0x48 + R.speed_bonus * 0x30;
     int dx = key_tri_horz(), dy = key_tri_vert();
+    int fire = fire_down(), bomb = key_hit(bomb_key()), cash = key_hit(KEY_L), shiftk = key_hit(KEY_R);
+    if (g_autopilot) {
+        autopilot(spd);
+        dx = ap_dx; dy = ap_dy; fire = 1; bomb = ap_bomb;
+        cash = R.hi >= 0 && !pu_maxed(R.slots[R.hi]);
+        shiftk = shift_g >= SHIFT_MAX;
+    }
     if (dx && dy) spd = spd * 181 >> 8;
     if (dx || dy) {
         px += dx * spd; py += dy * spd;
@@ -569,7 +735,7 @@ static void update_player(void)
     }
     if (p_inv) p_inv--;
     if (p_shot_t > 0) p_shot_t--;
-    if (fire_down() && p_shot_t == 0) {
+    if (fire && p_shot_t == 0) {
         fire_pattern(px, py);
         for (int o = 0; o < R.options; o++) {
             int hi = (hist_i - 10 * (o + 1)) & 31;
@@ -578,21 +744,22 @@ static void update_player(void)
         p_shot_t = shot_interval();
         sfx(SFX_SHOT);
     }
-    if (R.missile_lv && fire_down() && --p_msl_t <= 0) {
+    if (R.missile_lv && fire && --p_msl_t <= 0) {
         ps_add(px, py + FX(4), 0x200, 0x140, SPR_SHOT_MISSILE, 8, 2 + R.dmg_bonus, 0, 1);
         if (R.missile_lv >= 2) ps_add(px, py - FX(4), 0x200, -0x140, SPR_SHOT_MISSILE, 8, 2 + R.dmg_bonus, 0, 1);
         p_msl_t = 36;
     }
     if (bomb_cd) bomb_cd--;
-    if (key_hit(bomb_key()) && R.bombs && !bomb_cd) {
+    if (bomb && R.bombs && !bomb_cd) {
         R.bombs--; bomb_cd = 50; p_inv = p_inv > 70 ? p_inv : 70;
+        g_stats.bombs++;
         if (R.diff == D_EXTREME) R.rank = R.rank > 10 ? R.rank - 10 : 0;
         sfx(SFX_BOMB); flash_t = 8; vid_shake(16);
         for (int i = 0; i < MAX_EB; i++) if (eb[i].alive) { eb[i].alive = 0; R.score += 10; if (frnd(3) == 0) fx_add(eb[i].x >> 8, eb[i].y >> 8, 1); }
         for (int i = 0; i < MAX_EN; i++) if (en[i].alive && en[i].x < FX(244)) { en[i].hp -= 12; en[i].flash = 6; if (en[i].hp <= 0) kill_enemy(&en[i]); }
         if (B.alive && !B.inv && B.x < FX(230)) { B.hp -= B.maxhp / 12; B.flash = 8; }
     }
-    if (key_hit(KEY_L) && R.hi >= 0) {
+    if (cash && R.hi >= 0) {
         int pu = R.slots[R.hi];
         if (pu_maxed(pu)) { sfx(SFX_MENU); }
         else {
@@ -600,9 +767,13 @@ static void update_player(void)
             pop = pu_name[pu]; pop_t = 70; txt_clear_rows(17, 17);
         }
     }
-    if (g_debug && key_hit(KEY_R)) { R.hi = (R.hi + 1) % 7; }
+    // SHIFT: R when the gauge is full (in debug with an unfilled gauge R still advances the meter)
+    if (shiftk && shift_g >= SHIFT_MAX && !shift_t && (phase == P_WAVES || phase == P_BOSS || phase == P_WARN)) shift_start();
+    else if (g_debug && key_hit(KEY_R)) { R.hi = (R.hi + 1) % 7; }
     if (g_debug && key_hit(KEY_SELECT) && phase == P_WAVES) lvl_t = lvl_len;
     else if (g_debug && key_hit(KEY_SELECT) && phase == P_BOSS && !B.inv) { B.hp -= B.maxhp / 3 + 1; B.flash = 8; }
+    // debug: L+R together fills the SHIFT gauge (screenshots / tests)
+    if (g_debug && key_is_down(KEY_L) && key_is_down(KEY_R) && !shift_t) shift_g = SHIFT_MAX;
 }
 
 static void update_shots(void)
@@ -632,14 +803,18 @@ static void update_shots(void)
             if (!e->alive || e->x > FX(244)) continue;
             const EDef *d = &edefs[e->kind];
             if (ABS(e->x - s->x) < FX(d->hw + hw) && ABS(e->y - s->y) < FX(d->hh + hw)) {
-                e->hp -= s->dmg; e->flash = 3;
+                e->hp -= (shift_t && shift_dir == 2) ? s->dmg * 2 : s->dmg; e->flash = 3;
                 if (e->hp <= 0) kill_enemy(e); else sfx(SFX_ENHIT);
                 if (!s->pierce) s->alive = 0;
                 else { s->dmg = s->dmg > 1 ? s->dmg : 1; }
             }
         }
         if (s->alive && B.alive && phase == P_BOSS && ABS(B.x - s->x) < FX(B.hw + hw) && ABS(B.y - s->y) < FX(B.hh + hw)) {
-            if (!B.inv) { B.hp -= s->dmg; B.flash = 2; add_score(10); }
+            if (!B.inv) {
+                int dm = (shift_t && shift_dir == 2) ? s->dmg * 2 : s->dmg;
+                B.hp -= dm; B.flash = 2; add_score(10);
+                shift_frac += dm; if (shift_frac >= 3) { shift_gain(shift_frac / 3); shift_frac %= 3; }
+            }
             s->alive = 0;
             fx_add(s->x >> 8, s->y >> 8, 1);
         }
@@ -682,8 +857,9 @@ static void update_enemies(void)
         }
         if (e->x < -FX(24) || e->x > FX(300) || e->y < -FX(24) || e->y > FX(186)) { e->alive = 0; continue; }
         // fire
-        if (d->fire && e->x < FX(232) && e->x > FX(30) && --e->ft <= 0) {
+        if (d->fire && e->x < FX(232) && e->x > FX(30) && e->t > BAL_GRACE[R.diff] && --e->ft <= 0) {
             e->ft = ((d->fint * firemul) >> 8) + rnd(20);
+            if (shift_t) e->ft = shift_dir == 1 ? e->ft * 3 / 2 : e->ft * 3 / 4;
             switch (d->fire) {
             case F_AIM: eb_fire(e->x, e->y, aim(e->x, e->y), 0x180, EB_PELLET); break;
             case F_AIM3: fan(e->x, e->y, 3, 0x0900, 0x170, EB_PELLET); break;
@@ -708,7 +884,7 @@ static void update_bullets(void)
         if (slow) { b->x += b->vx >> 1; b->y += b->vy >> 1; }
         else { b->x += b->vx; b->y += b->vy; }
         if (b->x < -FX(8) || b->x > FX(248) || b->y < FX(12) || b->y > FX(156)) { b->alive = 0; continue; }
-        if (!p_dead && ABS(b->x - px) < FX(3) && ABS(b->y - py) < FX(3)) { b->alive = 0; player_hit(); }
+        if (!p_dead && ABS(b->x - px) < HITBOX && ABS(b->y - py) < HITBOX) { b->alive = 0; player_hit(); }
     }
 }
 
@@ -730,6 +906,7 @@ static void update_items(void)
         if (!p_dead && ABS(dx) < FX(10) && ABS(dy) < FX(10)) {
             m->alive = 0;
             if (m->type == 0) { R.hi = (R.hi + 1) % 7; add_score(500); sfx(SFX_PICKUP); }
+            else if (m->type == 2) { shift_gain(50); add_score(300); sfx(SFX_POWERUP); pop = "SHIFT ORB +50%"; pop_t = 60; txt_clear_rows(17, 17); }
             else { R.coins += R.coin_mul; if (R.coins > 999) R.coins = 999; add_score(50); sfx(SFX_COIN); }
         }
     }
@@ -740,11 +917,42 @@ static void update_items(void)
     }
 }
 
+static void enter_clear(void)
+{
+    int r = clear_relic;
+    banner("SUB-LEVEL CLEAR!", relic_name[r], 230, P_YELLOW);
+    pop = relic_desc[r]; pop_t = 230;
+    music_play(MUS_CLEAR);
+    phase = P_CLEAR; phase_t = 0;
+}
+static void start_talk(int scene, int after)
+{
+    shift_end(0);
+    for (int i = 0; i < MAX_EB; i++) eb[i].alive = 0;
+    txt_clear_rows(3, 19);
+    ban_t = 0; pop_t = 0;
+    talk_after = after; phase = P_TALK; phase_t = 0;
+    talk_start(scene);
+}
+
 void game_update(void)
 {
     if (paused) {
         if (key_hit(KEY_START)) { paused = 0; txt_clear_rows(3, 18); sfx(SFX_MENU); }
-        else if (key_hit(KEY_SELECT)) { paused = 0; txt_clear_rows(3, 18); set_state(ST_GAMEOVER); }
+        else if (key_hit(KEY_SELECT)) { paused = 0; txt_clear_rows(3, 18); shift_end(0); set_state(ST_GAMEOVER); }
+        return;
+    }
+    if (phase == P_TALK) {
+        // in-stage boss dialogue: the action freezes behind the box
+        phase_t++;
+        g_far_x += 0x10; g_near_x += 0x40;
+        if (talk_update()) {
+            txt_clear_rows(12, 19);
+            if (talk_after == P_CLEAR) enter_clear();
+            else { phase = P_BOSS; phase_t = 0; B.inv = B.inv > 30 ? B.inv : 30; }
+        }
+        game_draw_hud();
+        game_draw_sprites();
         return;
     }
     if (key_hit(KEY_START) && (phase == P_WAVES || phase == P_BOSS || phase == P_INTRO || phase == P_WARN)) {
@@ -752,8 +960,11 @@ void game_update(void)
     }
     g_far_x += 0x40; g_near_x += 0x100;
     phase_t++;
+    g_stats.frames++;
+    if (R.sub < 3) g_stats.stage_frames[R.sub]++;
     if (R.slowmo) R.slowmo--;
     if (R.x2) R.x2--;
+    if (shift_t && --shift_t == 0) { shift_t = 1; shift_end(1); }
     if (!p_dead) {
         nohit_t++;
         if (R.diff == D_EXTREME && nohit_t % 120 == 0 && R.rank < 100) R.rank++;
@@ -771,13 +982,20 @@ void game_update(void)
         break;
     case P_WARN:
         if (phase_t == 90) { banner("WARNING!", boss_names[R.sub == 0 ? 0 : R.sub == 1 ? (R.route == ROUTE_NIGHT ? 1 : 2) : (R.route == ROUTE_NIGHT ? 3 : 4)], 150, P_RED); sfx(SFX_WARNING); music_stop(); }
-        if (phase_t == 200) { boss_spawn(); music_play(MUS_BOSS); }
+        if (phase_t == 200) { boss_spawn(); music_play(shift_t ? (shift_dir == 1 ? MUS_BOSS_DREAM : MUS_BOSS_NIGHT) : MUS_BOSS); }
         if (phase_t > 200) { phase = P_BOSS; phase_t = 0; }
         break;
     case P_BOSS:
+        if (R.sub < 3) g_stats.boss_frames[R.sub]++;
         boss_update();
+        // boss in position: pre-fight dialogue (once)
+        if (!talked_pre && B.x <= FX(B.kind == BK_MAIN ? 184 : 196)) {
+            talked_pre = 1;
+            if (story_on()) { start_talk(story_boss_pre(), P_BOSS); break; }
+        }
         if (B.hp <= 0) {
             phase = P_BOSSDIE; phase_t = 0;
+            shift_end(1);
             boss_clear_bullets();
             add_score(R.sub == 2 ? 50000 : 10000);
             music_stop();
@@ -789,21 +1007,25 @@ void game_update(void)
         if (phase_t == 100) {
             B.alive = 0; sfx(SFX_BIGEXPLODE); flash_t = 6; vid_shake(20);
             R.bosses++; R.subs_cleared++;
+            g_stats.bosses = R.bosses;
             int r = rnd(NUM_RELICS);
             while (R.relics[r] && R.nrelics < NUM_RELICS) r = (r + 1) % NUM_RELICS;
             run_grant_relic(r);
+            clear_relic = r;
             add_score(5000 * (R.sub + 1) + R.shields * 2000);
             R.coins += 10 * (R.sub + 1);
-            banner("SUB-LEVEL CLEAR!", relic_name[r], 230, P_YELLOW);
-            pop = relic_desc[r]; pop_t = 230;
-            music_play(MUS_CLEAR);
-            phase = P_CLEAR; phase_t = 0;
+            if (R.sub == 0) story_mem_event(MEM_GATE);
+            else if (R.sub == 1) story_mem_event(R.route == ROUTE_NIGHT ? MEM_MOTH : MEM_TEDDY);
+            if (!story_on()) enter_clear();          // debug runs keep the v0.2 timing
         }
+        if (phase_t == 140 && phase == P_BOSSDIE) start_talk(story_boss_post(), P_CLEAR);
         break;
     case P_CLEAR:
         for (int i = 0; i < MAX_IT; i++) if (it[i].alive) { it[i].x += (px - it[i].x) / 8; it[i].y += (py - it[i].y) / 8; }
         if (phase_t > 240) {
-            if (R.sub < 2) set_state(ST_FORK); else set_state(ST_CLEAR);
+            if (R.sub < 2) set_state(ST_FORK);
+            else if (story_on()) dialog_goto(story_ending_scene(), ST_CLEAR);
+            else set_state(ST_CLEAR);
         }
         break;
     case P_DEAD:
@@ -816,6 +1038,7 @@ void game_update(void)
     update_items();
     // flash effect
     if (flash_t) { flash_t--; vid_flash(flash_t && (flash_t & 2), themes[R.theme].pal[0]); }
+    g_stats.score = R.score; g_stats.shields_end = R.shields;
     game_draw_hud();
     game_draw_sprites();
 }
@@ -823,6 +1046,7 @@ void game_update(void)
 void game_draw_sprites(void)
 {
     oam_begin();
+    if (phase == P_TALK) talk_draw_portrait();
     for (int i = 0; i < MAX_EB; i++) if (eb[i].alive)
         spr((eb[i].x >> 8) - 4, (eb[i].y >> 8) - 4, eb_spr[eb[i].type], 8, 15, 0);
     if (!p_dead && !(p_inv & 2)) {
@@ -835,7 +1059,8 @@ void game_draw_sprites(void)
     }
     for (int i = 0; i < MAX_IT; i++) if (it[i].alive) {
         int f = (it[i].t >> 3) & 1;
-        spr((it[i].x >> 8) - 4, (it[i].y >> 8) - 4, (it[i].type == 0 ? SPR_CAPSULE : SPR_COIN) + f, 8, 0, 0);
+        if (it[i].type == 2) spr((it[i].x >> 8) - 4, (it[i].y >> 8) - 4, SPR_SHIFT_ORB + f, 8, 10, 0);
+        else spr((it[i].x >> 8) - 4, (it[i].y >> 8) - 4, (it[i].type == 0 ? SPR_CAPSULE : SPR_COIN) + f, 8, 0, 0);
     }
     for (int i = 0; i < MAX_PS; i++) if (ps[i].alive) {
         int t = ps[i].spr;

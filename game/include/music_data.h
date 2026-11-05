@@ -13,6 +13,9 @@ extern const u8 waves[][16];
 #define MUS_GAMEOVER 4
 #define MUS_CLEAR 5
 #define MUS_FORK 6
+#define MUS_W1_UNEASY 7
+#define MUS_BOSS_DREAM 8
+#define MUS_BOSS_NIGHT 9
 typedef struct { const s8 *data; u32 len; } SfxDef;
 extern const SfxDef sfx_defs[];
 #define SFX_SHOT 0
@@ -27,4 +30,5 @@ extern const SfxDef sfx_defs[];
 #define SFX_COIN 9
 #define SFX_WARNING 10
 #define SFX_ENHIT 11
+#define SFX_SHIFT 12
 #define SFX_RATE 13379

@@ -24,15 +24,16 @@ def hexc(h):
 # ---------------------------------------------------------------- palettes
 # OBJ palette banks (16 colours each, index 0 transparent)
 OBJ_PALS = {
- 0: ('hero',  ".kbcCwoyrgGpnteV", ['000000','101018','203078','30c0f0','a8f0ff','ffffff','ff7818','ffe040','e02828','8890a8','485060','ff90c8','a06030','e8b878','40d060','9050e0']),
- 1: ('bullet',".DropwylbmMOngPe", ['000000','600010','e02020','ff5030','ff70b0','ffffff','ffe040','90d8ff','3070ff','d030c0','ff90f0','ff9020','b05010','a0a0b0','ffc0e0','80ffc0']),
+ 0: ('hero',  ".kbcCwoyrgGpnteV", ['000000','101018','203078','30c0f0','a8f0ff','ffffff','ff7818','ffe040','e02828','8890a8','485060','ff90c8','a06030','e8b878','40d060','000000']),  # 15 = cartoon outline black (v0.3)
+ 1: ('bullet',".DropwylbmMOngPe", ['000000','600010','e02020','ff5030','ff70b0','ffffff','ffe040','90d8ff','3070ff','d030c0','ff90f0','ff9020','b05010','a0a0b0','ffc0e0','000000']),  # 15 = outline black
  2: ('twilight',".kvVmMdrRgGLwyco",['000000','100818','482070','8040c0','d050d0','ff90f0','601018','a02028','e04040','383848','707888','b0b8c8','ffffff','ffe040','40e0ff','ff8020']),
  3: ('nightmare',".kvVmMdrRgGLwyco",['000000','080004','301030','602060','a02040','e04060','400008','701010','c02010','202024','484850','808088','e0d0d0','ff4020','ff2020','ff8000']),
- 4: ('dream', ".kpPwyYmMbBvodEn", ['000000','503058','ff80b8','ffc0dc','ffffff','ffe050','fff4a0','60e0b0','b0ffe0','60b0ff','b8e0ff','c0a0ff','ff9840','ff5060','201828','a06838']),
- 5: ('bossN', ".k123456789ABCDE", ['000000','080408','281820','483038','685058','908088','400810','801018','d02020','ff6040','ffd040','204060','40a0ff','b0f0ff','ffffff','603000']),
- 6: ('bossD', ".k123456789ABCDE", ['000000','301838','6048a0','9070d0','c0a0f0','ffe8a0','c04080','ff70b0','ff3080','ff90c0','fff080','40a090','60f0c0','e0fff0','ffffff','f0a060']),
+ 4: ('dream', ".kpPwyYmMbBvodEn", ['000000','503058','ff80b8','ffc0dc','ffffff','ffe050','fff4a0','60e0b0','b0ffe0','60b0ff','b8e0ff','000000','ff9840','ff5060','201828','a06838']),  # 11 = outline black
+ 5: ('bossN', ".k123456789ABCDE", ['000000','080408','281820','483038','685058','908088','400810','801018','d02020','ff6040','ffd040','204060','40a0ff','b0f0ff','ffffff','000000']),  # 15 = outline black
+ 6: ('bossD', ".k123456789ABCDE", ['000000','301838','6048a0','9070d0','c0a0f0','ffe8a0','c04080','ff70b0','ff3080','ff90c0','fff080','40a090','60f0c0','e0fff0','ffffff','000000']),  # 15 = outline black
  7: ('portrait',".k23456789ABCDEF",['000000','180c10','f8c8a0','d09070','804020','482010','30c0f0','c0f8ff','e02828','801018','ffffff','100818','6030a0','ff2020','ff9090','2848a0']),
  8: ('flash', ".", ['000000'] + ['ffffff']*15),
+ 10: ('portrait2', ".k23456789ABCDEF", ['000000','0c0c14','f8c8a0','2a2a3a','5a5a70','9898b0','ff3020','ffb0a0','1c1c40','ffffff','ffd040','ff8020','3050c0','f0e8b0','c0a0ff','7030a0']),
  9: ('gold', ".", ['000000','503000','a07000','ffd000','fff8a0','ffffff','ff8000','804000','ffffff','ffffff','ffffff','ffffff','ffffff','ffffff','ffffff','ffffff']),
 }
 
@@ -530,6 +531,59 @@ def merchant(ph):
     return im
 add('PORT_TEDDY', 32, 7, [merchant(0), merchant(1)])
 
+# --- v0.3 portraits (bank 10 'portrait2'): VOX (nightmare commander on the radio), SGT. WADDLES, the MOON SANDMAN
+def vox(ph):
+    im = new(32, 32); d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, 31, 31), fill=8)
+    for y in range(1, 32, 3): d.line((0, y, 31, y), fill=3)              # radio static lines
+    d.rectangle((6, 25, 26, 31), fill=3); d.rectangle((8, 26, 24, 31), fill=4)   # collar / shoulders
+    d.polygon([(8, 27), (12, 31), (4, 31)], fill=10); d.polygon([(24, 27), (20, 31), (28, 31)], fill=10)  # gold pips
+    d.ellipse((7, 14, 25, 30), fill=2)                                     # jaw
+    d.pieslice((4, 2, 28, 30), 180, 360, fill=4)                           # helmet dome
+    d.rectangle((4, 15, 28, 16), fill=3)
+    d.pieslice((6, 4, 26, 26), 200, 340, fill=5)                           # dome highlight
+    d.rectangle((6, 13, 26, 19), fill=1)                                   # visor band
+    d.rectangle((7, 14, 25, 18), fill=6 if ph else 11)
+    d.line((8, 15, 24, 15), fill=7)
+    d.line((12, 25, 20, 25) if ph else (12, 24, 20, 24), fill=1)            # mouth
+    d.rectangle((25, 18, 28, 26), fill=3); d.line((27, 26, 19, 28), fill=4); d.rectangle((17, 27, 19, 29), fill=6 if ph else 3)  # headset mic
+    return outline(im, 1)
+add('PORT_VOX', 32, 10, [vox(0), vox(1)])
+def waddles(ph):
+    im = new(32, 32); d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, 31, 31), fill=14)
+    for x, y in ((3, 4), (27, 9), (5, 22), (28, 26)): im.putpixel((x, y), 9)
+    d.ellipse((3, 8, 29, 40), fill=3)                                      # body
+    d.ellipse((8, 12, 24, 40), fill=9)                                     # face / belly
+    d.rectangle((5, 3, 27, 9), fill=12); d.rectangle((3, 8, 29, 10), fill=1)    # sergeant cap + brim
+    d.rectangle((14, 4, 18, 7), fill=10)                                   # badge
+    eo = 1 if ph else 0
+    d.rectangle((11, 14, 13, 16), fill=1); d.rectangle((19, 14, 21, 16), fill=1)
+    im.putpixel((12, 14), 9); im.putpixel((20, 14), 9)
+    d.polygon([(13, 19), (19, 19), (16, 23 + eo)], fill=11)                # beak (opens)
+    if ph: d.line((14, 21, 18, 21), fill=1)
+    d.rectangle((9, 26, 23, 27), fill=6); d.rectangle((14, 26, 18, 30), fill=6)  # red bow tie
+    return outline(im, 1)
+add('PORT_WADDLES', 32, 10, [waddles(0), waddles(1)])
+def sandman(ph):
+    im = new(32, 32); d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, 31, 31), fill=8)
+    for x, y in ((3, 3), (28, 5), (25, 27), (4, 26), (30, 17)): im.putpixel((x, y), 10)
+    d.ellipse((4, 6, 28, 30), fill=13)                                     # moon face
+    d.ellipse((12, 4, 34, 28), fill=8)                                     # crescent bite
+    d.polygon([(4, 10), (20, 2), (30, 8), (16, 8)], fill=15)               # nightcap
+    d.ellipse((27, 6, 31, 10), fill=9)                                     # pompom
+    if ph: d.line((8, 15, 11, 15), fill=1)                                 # sleepy eye shut
+    else: d.arc((7, 13, 12, 18), 0, 180, fill=1)
+    d.ellipse((6, 19, 9, 21), fill=7)                                      # cheek
+    d.arc((7, 21, 13, 26), 0, 120, fill=1)                                 # smile
+    for k in range(3): im.putpixel((18 + k * 3, 14 + k * 4), 10)           # sand sparkles
+    return outline(im, 1)
+add('PORT_SANDMAN', 32, 10, [sandman(0), sandman(1)])
+shift0 = ascii_img(["..kkkk..", ".kEEFFk.", "kEE99FFk", "kE9EEFFk", "kEEFF9Fk", "kEEF99Fk", ".kEEFFk.", "..kkkk.."], ".k23456789ABCDEF", 8, 8)
+shift1 = ascii_img(["..kkkk..", ".kFFEEk.", "kFF99EEk", "kF9FFEEk", "kFFEE9Ek", "kFFE99Ek", ".kFFEEk.", "..kkkk.."], ".k23456789ABCDEF", 8, 8)
+add('SHIFT_ORB', 8, 10, [shift0, shift1])
+
 # ---------------------------------------------------------------- BG: UI tiles (bank 10)
 def tile(rows):
     return ascii_img(rows, ".fbhdrRyg", 8, 8)  # 0 . 1 f(fill) 2 b(border) 3 h(hilite) 4 d(dark) 5 r red 6 R dark red 7 y 8 g
@@ -634,6 +688,106 @@ def bg_tileset(img, maxtiles=1024, base=None, pal_bank=0):
 
 logo_tiles, logo_map = bg_tileset(logo, pal_bank=7)
 print('logo tiles', len(logo_tiles))
+
+# ---------------------------------------------------------------- v0.3 CARTOON outline variants
+# A real-time edge-detect shader is impossible on GBA hardware, so the outlines are baked here:
+# every sprite / foreground tile gets 4 variants (0 OFF = original art, 1X, 2X, 3X) and the ROM swaps
+# the whole tile set when the CARTOON setting changes.  Original pixels are never changed by 1X/2X;
+# outlines only go into transparent pixels around the art.
+#  1X: thin 4-neighbour outline in the bank's own darkest colour
+#  2X: solid black 8-neighbour outline
+#  3X: 2X + extra line weight on the bottom/right edge + a cel shadow rim on big sprites
+OL_BLACK = {0: 15, 1: 15, 2: 1, 3: 1, 4: 11, 5: 15, 6: 15}   # pure black slot per OBJ bank (2/3 'k' is ~black)
+OL_DARK = {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1}         # the art's own dark outline colour
+NO_CARTOON = {7, 10}        # full-square portraits: nothing to outline
+SHADE_BANKS = {0, 2, 4, 5}  # cel shadow only on ships / enemies / bosses (never bullets or effects)
+N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+N8 = N4 + ((1, 1), (-1, -1), (1, -1), (-1, 1))
+def _lum(c): return 0.30 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+def shade_map(bank):
+    """cel shadow colour per palette index: a darker colour of the same hue family from the same bank"""
+    import colorsys
+    cols = [hexc(c) for c in OBJ_PALS[bank][2]]
+    skip = {OL_BLACK.get(bank, -1), 0}
+    m = {}
+    for i in range(1, 16):
+        if i in skip: continue
+        h1, l1, s1 = colorsys.rgb_to_hls(*[v / 255 for v in cols[i]])
+        best = None; bd = 1e9
+        for j in range(1, 16):
+            if j == i or j in skip: continue
+            h2, l2, s2 = colorsys.rgb_to_hls(*[v / 255 for v in cols[j]])
+            if not (l1 * 0.35 <= l2 <= l1 * 0.82): continue
+            dh = min(abs(h1 - h2), 1 - abs(h1 - h2))
+            if s1 > 0.15 and s2 > 0.15 and dh > 0.07: continue      # different hue family
+            if (s1 <= 0.15) != (s2 <= 0.25): continue               # grey stays grey-ish
+            dd = dh * 4 + abs(l2 - l1 * 0.62) + abs(s2 - s1) * 0.3
+            if dd < bd: bd = dd; best = j
+        if best is not None: m[i] = best
+    return m
+SHADE = {b: shade_map(b) for b in SHADE_BANKS}
+
+def cartoon(img, bank, lvl):
+    if lvl == 0 or bank in NO_CARTOON: return img
+    w, h = img.size; src = img.load(); out = img.copy(); o = out.load()
+    oc = OL_DARK[bank] if lvl == 1 else OL_BLACK[bank]
+    nb = N4 if lvl == 1 else N8
+    def S(x, y): return src[x, y] if 0 <= x < w and 0 <= y < h else 0
+    for y in range(h):
+        for x in range(w):
+            if src[x, y] == 0 and any(S(x + dx, y + dy) for dx, dy in nb):
+                o[x, y] = oc
+    if lvl == 3 and bank != 1:
+        # line weight: a second outline pixel below / right of art (cartoon ink is heavier on the shadow side)
+        add_px = []
+        for y in range(h):
+            for x in range(w):
+                if o[x, y] == 0 and ((S(x, y - 2) and y >= 1 and o[x, y - 1] == oc) or (S(x - 2, y) and x >= 1 and o[x - 1, y] == oc)):
+                    add_px.append((x, y))
+        for x, y in add_px: o[x, y] = oc
+        if bank in SHADE and w >= 32:
+            sm = SHADE[bank]; dk = (OL_DARK[bank], OL_BLACK[bank])
+            for y in range(h):
+                for x in range(w):
+                    v = src[x, y]
+                    if v and v not in dk and v in sm and S(x, y + 1) in (0,) + dk and S(x, y - 1) not in (0,):
+                        o[x, y] = sm[v]
+    return out
+
+def _components(img, minsize):
+    """mask of pixels that belong to 4-connected art components with >= minsize pixels (x wraps)"""
+    w, h = img.size; px = img.load(); seen = bytearray(w * h); keep = bytearray(w * h)
+    for y0 in range(h):
+        for x0 in range(w):
+            if not px[x0, y0] or seen[y0 * w + x0]: continue
+            stack = [(x0, y0)]; seen[y0 * w + x0] = 1; comp = []
+            while stack:
+                x, y = stack.pop(); comp.append((x, y))
+                for dx, dy in N4:
+                    xx, yy = (x + dx) % w, y + dy
+                    if 0 <= yy < h and px[xx, yy] and not seen[yy * w + xx]:
+                        seen[yy * w + xx] = 1; stack.append((xx, yy))
+            if len(comp) >= minsize:
+                for x, y in comp: keep[y * w + x] = 1
+    return keep
+
+def bg_cartoon(img, lvl):
+    """foreground (near layer) outline variant. BG bank 9: 14 = dark outline, 15 = black"""
+    if lvl == 0: return img
+    w, h = img.size; src = img.load(); out = img.copy(); o = out.load()
+    keep = _components(img, 10)            # single-pixel stars stay crisp, shapes get ink
+    oc = 14 if lvl == 1 else 15
+    nb = N4 if lvl == 1 else N8
+    def K(x, y): return 0 <= y < h and keep[y * w + (x % w)]
+    for y in range(h):
+        for x in range(w):
+            if src[x, y] == 0 and any(K(x + dx, y + dy) for dx, dy in nb):
+                o[x, y] = oc
+    if lvl == 3:
+        add_px = [(x, y) for y in range(1, h) for x in range(w)
+                  if o[x, y] == 0 and ((y >= 2 and K(x, y - 2) and o[x, y - 1] == oc) or (K(x - 2, y) and o[(x - 1) % w, y] == oc))]
+        for x, y in add_px: o[x, y] = oc
+    return out
 
 # ---------------------------------------------------------------- stage backgrounds
 # far layer (bank 8): idx 1..3 star colours. near layer (bank 9) per theme.
@@ -756,36 +910,41 @@ THEMES = [  # name, near image fn, backdrop, far colours(3), near palette(15)
      ['f0e0ff', 'c0a0f0', 'fff0a0', 'ffffff', 'ff90d0', '90e0ff']),
 ]
 NEAR_IMGS = {}
-theme_out = []
-bg_tiles_all = []  # per theme tileset (far + near share charblock 2)
+theme_out_v = [[], [], [], []]   # per cartoon level
 for ti, (name, fn, back, farc, nearc) in enumerate(THEMES):
     key = fn.__name__
     if key not in NEAR_IMGS:
-        NEAR_IMGS[key] = fn()
+        base = fn()
+        NEAR_IMGS[key] = [base] + [bg_cartoon(base, l) for l in (1, 2, 3)]
     far_t, far_m = far_layer(100 + ti)
-    tl = list(far_t)
-    near_img = NEAR_IMGS[key]
-    tl, near_m_raw = bg_tileset(near_img, base=tl, pal_bank=9)
-    # near map is 64x32 -> GBA layout: two 32x32 screenblocks side by side
-    near_m = []
-    for half in range(2):
-        for y in range(32):
-            for x in range(32):
-                near_m.append(near_m_raw[y * 64 + half * 32 + x])
     far_m = [v | (8 << 12) for v in far_m]
+    bk = hexc(back)
+    dark = '%02x%02x%02x' % tuple(int(v * 0.30) for v in bk)
     pal = [rgb15(hexc(back))] + [rgb15(hexc(c)) for c in farc] + [0] * 12
     npal = [0] + [rgb15(hexc(c)) for c in nearc] + [0] * (15 - len(nearc))
-    print('theme', name, 'tiles', len(tl))
-    assert len(tl) <= 512
-    theme_out.append((name, key, tl, far_m, near_m, pal, npal))
-    # preview
-    prev = Image.new('RGB', (512, 160), hexc(back))
-    nimg = near_img.convert('RGB'); npx = near_img.load(); pp = prev.load()
-    for y in range(160):
-        for x in range(512):
-            v = npx[x, y]
-            if v: pp[x, y] = hexc(nearc[v - 1]) if v - 1 < len(nearc) else (255, 0, 255)
-    prev.save(os.path.join(ART, 'bg_%s.png' % name.lower()))
+    npal[14] = rgb15(hexc(dark)); npal[15] = 0       # cartoon outline colours (unused by the original art)
+    for lvl in range(4):
+        near_img = NEAR_IMGS[key][lvl]
+        tl, near_m_raw = bg_tileset(near_img, base=list(far_t), pal_bank=9)
+        # near map is 64x32 -> GBA layout: two 32x32 screenblocks side by side
+        near_m = []
+        for half in range(2):
+            for y in range(32):
+                for x in range(32):
+                    near_m.append(near_m_raw[y * 64 + half * 32 + x])
+        print('theme', name, 'cartoon', lvl, 'tiles', len(tl))
+        assert len(tl) <= 600, 'charblock 2 + spill must stay below screenblock 26 (640 tiles)'
+        theme_out_v[lvl].append((name, key + str(lvl), tl, far_m, near_m, pal, npal))
+        # preview
+        prev = Image.new('RGB', (512, 160), bk)
+        npx = near_img.load(); pp = prev.load()
+        cmap = {i + 1: hexc(c) for i, c in enumerate(nearc)}; cmap[14] = hexc(dark); cmap[15] = (0, 0, 0)
+        for y in range(160):
+            for x in range(512):
+                v = npx[x, y]
+                if v: pp[x, y] = cmap.get(v, (255, 0, 255))
+        prev.save(os.path.join(ART, 'bg_%s%s.png' % (name.lower(), '' if lvl == 0 else '_cartoon%d' % lvl)))
+theme_out = theme_out_v[0]
 
 # ---------------------------------------------------------------- emit C
 out_c = ['// generated by tools/gen_assets.py - original art', '#include "assets.h"', '']
@@ -801,20 +960,28 @@ def carr_u16(name, vals):
     lines = [', '.join('0x%04X' % v for v in vals[i:i+16]) for i in range(0, len(vals), 16)]
     return 'const u16 %s[%d] = {\n  %s\n};' % (name, len(vals), ',\n  '.join(lines))
 
-# OBJ tiles
-obj = bytearray(); sheet_imgs = []
+# OBJ tiles (+ CARTOON variants 1..3, identical layout)
+obj_v = [bytearray() for _ in range(4)]; sheet_imgs = []; sheet_v = [[], [], [], []]
 for name, size, bank, frames in SPRITES:
-    start = len(obj) // 32
+    start = len(obj_v[0]) // 32
     n = (size // 8) ** 2
     for f in frames:
         assert f.size == (size, size), (name, f.size)
-        for t in tiles_from_img(f, size, size): obj += t
+        for lvl in range(4):
+            fv = cartoon(f, bank, lvl)
+            for t in tiles_from_img(fv, size, size): obj_v[lvl] += t
+            sheet_v[lvl].append((name, bank, fv))
         sheet_imgs.append((name, bank, f))
     out_h.append('#define SPR_%s %d  // %dx%d bank %d frames %d (tiles/frame %d)' % (name, start, size, size, bank, len(frames), n))
     out_h.append('#define SPRPAL_%s %d' % (name, bank))
+obj = obj_v[0]
 out_h.append('#define OBJ_TILE_COUNT %d' % (len(obj) // 32))
-assert len(obj) // 32 <= 1024
+assert len(obj) // 32 <= 990
 out_c.append(carr_u32('obj_tiles', bytes(obj)))
+for lvl in (1, 2, 3):
+    out_c.append(carr_u32('obj_tiles_c%d' % lvl, bytes(obj_v[lvl])))
+out_c.append('const u32 *const obj_tiles_cartoon[4] = { obj_tiles, obj_tiles_c1, obj_tiles_c2, obj_tiles_c3 };')
+out_h.append('extern const u32 *const obj_tiles_cartoon[4];')
 objpal = []
 for b in range(16):
     if b in OBJ_PALS:
@@ -851,25 +1018,29 @@ out_c.append(carr_u16('logo_map', logo_map))
 out_h += ['#define LOGO_TILES %d' % len(logo_tiles), '#define LOGO_W 30', '#define LOGO_H 8',
           'extern const u32 logo_tiles[];', 'extern const u16 logo_map[];']
 
-# themes
+# themes (one ThemeGfx table per CARTOON level)
 emitted_sets = {}
-for ti, (name, key, tl, far_m, near_m, pal, npal) in enumerate(theme_out):
-    data = b''.join(tl)
-    if data not in emitted_sets:
-        nm = 'bgset%d' % len(emitted_sets)
-        out_c.append(carr_u32(nm + '_tiles', data))
-        out_c.append(carr_u16(nm + '_near', near_m))
-        out_c.append(carr_u16(nm + '_far', far_m))
-        emitted_sets[data] = (nm, len(tl))
-    nm, cnt = emitted_sets[data]
-    out_c.append(carr_u16('theme%d_pal' % ti, pal + npal))
-out_c.append('const ThemeGfx themes[%d] = {' % len(theme_out))
-for ti, (name, key, tl, far_m, near_m, pal, npal) in enumerate(theme_out):
-    nm, cnt = emitted_sets[b''.join(tl)]
-    out_c.append('  { %s_tiles, %d, %s_near, %s_far, theme%d_pal },' % (nm, cnt, nm, nm, ti))
+for lvl in range(4):
+    for ti, (name, key, tl, far_m, near_m, pal, npal) in enumerate(theme_out_v[lvl]):
+        data = b''.join(tl)
+        if data not in emitted_sets:
+            nm = 'bgset%d' % len(emitted_sets)
+            out_c.append(carr_u32(nm + '_tiles', data))
+            out_c.append(carr_u16(nm + '_near', near_m))
+            out_c.append(carr_u16(nm + '_far', far_m))
+            emitted_sets[data] = (nm, len(tl))
+        if lvl == 0: out_c.append(carr_u16('theme%d_pal' % ti, pal + npal))
+out_c.append('const ThemeGfx themes_cartoon[4][%d] = {' % len(theme_out))
+for lvl in range(4):
+    out_c.append(' {')
+    for ti, (name, key, tl, far_m, near_m, pal, npal) in enumerate(theme_out_v[lvl]):
+        nm, cnt = emitted_sets[b''.join(tl)]
+        out_c.append('  { %s_tiles, %d, %s_near, %s_far, theme%d_pal },' % (nm, cnt, nm, nm, ti))
+    out_c.append(' },')
 out_c.append('};')
 out_h += ['typedef struct { const u32 *tiles; u16 ntiles; const u16 *near; const u16 *far; const u16 *pal; } ThemeGfx;',
-          'extern const ThemeGfx themes[%d];' % len(theme_out),
+          'extern const ThemeGfx themes_cartoon[4][%d];' % len(theme_out),
+          '#define themes (themes_cartoon[0])',
           'enum { TH_TWILIGHT, TH_HIVE, TH_CLOUDS, TH_FOUNDRY, TH_CANDYMOON };']
 
 open(os.path.join(GAME, 'src', 'assets.c'), 'w').write('\n'.join(out_c) + '\n')
@@ -891,6 +1062,17 @@ for i, (name, bank, im) in enumerate(sheet_imgs):
     big = big.resize((w * s, h * s), Image.NEAREST)
     sheet.paste(big, ((i % cols) * cell + 2, (i // cols) * cell + 2))
 sheet.save(os.path.join(ART, 'sprites.png'))
+for lvl in (1, 2, 3):
+    sh = Image.new('RGB', (cols * cell, rows_n * cell), (40, 40, 60))
+    for i, (name, bank, im) in enumerate(sheet_v[lvl]):
+        p = pal_rgb(bank); w, h = im.size
+        big = Image.new('RGB', (w, h), (40, 40, 60)); bp = big.load(); ip = im.load()
+        for y in range(h):
+            for x in range(w):
+                if ip[x, y]: bp[x, y] = p[ip[x, y]]
+        sc = 4 if w <= 16 else (2 if w <= 32 else 1)
+        sh.paste(big.resize((w * sc, h * sc), Image.NEAREST), ((i % cols) * cell + 2, (i // cols) * cell + 2))
+    sh.save(os.path.join(ART, 'sprites_cartoon%d.png' % lvl))
 lp = Image.new('RGB', (240, 64)); lpp = lp.load(); lip = logo.load()
 for y in range(64):
     for x in range(240):

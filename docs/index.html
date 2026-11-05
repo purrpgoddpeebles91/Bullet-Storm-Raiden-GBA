@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d0f14">
+<link rel="icon" href="data:,">
+<title>Bullet Storm Raiden: A Dream War (play in browser)</title>
+<meta name="description" content="Bullet Storm Raiden: A Dream War, an original GBA homebrew shoot-'em-up by Zachary Peebles, made for GitHub Game Off 2026. Play it in your browser.">
+<style>
+  html,body{margin:0;background:#0d0f14;color:#e8ecf2;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  a{color:#7fd3ff}
+  .wrap{max-width:980px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 40px}
+  header{text-align:center;padding:6px 0 12px}
+  header h1{margin:0;font-size:clamp(20px,4.6vw,34px);letter-spacing:.06em;font-weight:900;background:linear-gradient(#ffe36b,#ff6a3d);-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{margin:2px 0 0;color:#9fb0c8;font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+  section{margin-top:26px;background:#121620;border:1px solid #222a3a;border-radius:16px;padding:16px 18px}
+  section h2{margin:0 0 10px;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#bfe9c9}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  td,th{padding:6px 8px;border-bottom:1px solid #222a3a;text-align:left;vertical-align:top}
+  th{color:#9fb0c8;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  kbd{background:#1c2230;border:1px solid #33405a;border-bottom-width:2px;border-radius:6px;padding:1px 6px;font:600 12px ui-monospace,Menlo,monospace}
+  .credits p{margin:4px 0}
+  .big{font-weight:800;font-size:16px}
+  .small{color:#93a1b5;font-size:13px}
+  .dl a{display:inline-block;margin:4px 8px 4px 0;padding:8px 12px;border:1px solid #2c3446;border-radius:10px;background:#161b26;text-decoration:none;font-weight:700}
+  noscript{display:block;text-align:center;padding:30px;color:#ffcf6b}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>BULLET STORM RAIDEN</h1>
+    <p>A Dream War &middot; GBA homebrew shmup</p>
+  </header>
+  <div id="player"></div>
+  <noscript>This player needs JavaScript.</noscript>
+
+  <section>
+    <h2>Controls</h2>
+    <table>
+      <tr><th>Game</th><th>Touch / click</th><th>Keyboard</th><th>Gamepad</th></tr>
+      <tr><td>Move</td><td>Shell D-pad (slide your thumb, diagonals work)</td><td><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></td><td>D-pad / left stick</td></tr>
+      <tr><td>A: fire / confirm</td><td>A button</td><td><kbd>Z</kbd> or <kbd>Space</kbd></td><td>East / North</td></tr>
+      <tr><td>B: bomb / back</td><td>B button (tap between A and B for both)</td><td><kbd>X</kbd></td><td>South / West</td></tr>
+      <tr><td>L: cash in power meter</td><td>L shoulder</td><td><kbd>A</kbd></td><td>LB / LT</td></tr>
+      <tr><td>R</td><td>R shoulder</td><td><kbd>S</kbd></td><td>RB / RT</td></tr>
+      <tr><td>Start / pause</td><td>START</td><td><kbd>Enter</kbd></td><td>Start</td></tr>
+      <tr><td>Select</td><td>SELECT</td><td><kbd>Shift</kbd> or <kbd>Backspace</kbd></td><td>Back / View</td></tr>
+      <tr><td>Video settings</td><td>MENU button on the shell, or &#9881;</td><td></td><td></td></tr>
+      <tr><td>Fullscreen</td><td>Fullscreen button</td><td><kbd>F</kbd></td><td></td></tr>
+    </table>
+    <p class="small">Tap the screen, any button or any key to power on. Touch controls are multi-touch, every tap lasts at least 100&nbsp;ms so the game always sees it, and the D-pad can repeat while held (settings). Saves are not kept in the browser player; play the .gba in your own emulator to keep progress.</p>
+  </section>
+
+  <section class="dl">
+    <h2>Downloads</h2>
+    <a href="BulletStormRaiden.gba" download>Download the ROM (.gba)</a>
+    <a href="downloads/BSR_GreenShell.deltaskin" download>Delta skin (.deltaskin)</a>
+    <a href="downloads/BSR_GreenShell_RetroArch.zip" download>RetroArch overlay (.zip)</a>
+    <p class="small">ROM BSRAIDEN v0.3 · 541,024 bytes · md5 a9fb41b87e8c0c3e12c8f969ba978a9d</p>
+  </section>
+
+  <section class="credits">
+    <h2>Credits</h2>
+    <p class="big">Made for GitHub Game Off 2026</p>
+    <p class="big">A game developed and created by Zachary Peebles</p>
+    <p>Source &amp; releases: <a href="https://github.com/purrpgoddpeebles91/Bullet-Storm-Raiden-GBA" rel="noopener">github.com/purrpgoddpeebles91/Bullet-Storm-Raiden-GBA</a></p>
+    <p class="small">Browser emulation by <a href="https://github.com/endrift/gbajs" rel="noopener">gbajs</a> &copy; 2012 Jeffrey Pfau, BSD 2-clause license (<a href="gbajs-LICENSE.txt" rel="noopener">license text</a>), with its open-source replacement BIOS. Shell artwork, upscaler shaders and player code were written for this project. Original homebrew; not affiliated with or endorsed by any console maker.</p>
+  </section>
+</div>
+<script src="bsr-player.js"></script>
+<script src="bsr-app.js"></script>
+<script>
+  BSRApp.mount(document.getElementById('player'));
+</script>
+</body>
+</html>

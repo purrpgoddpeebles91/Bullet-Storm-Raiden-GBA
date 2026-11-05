@@ -1,0 +1,27 @@
+name: Build ROM
+on:
+  push:
+    branches: [main]
+    paths: ["game/**", "tools/**", ".github/workflows/build-rom.yml"]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Wonderful Toolchain (GBA + libtonc)
+        run: |
+          sudo mkdir -p /opt/wonderful && sudo chown -R "$(id -u)" /opt/wonderful
+          curl -sL https://wonderful.asie.pl/bootstrap/wf-bootstrap-x86_64.tar.gz | tar xz -C /opt/wonderful
+          export PATH=/opt/wonderful/bin:$PATH
+          wf-pacman -Syu --noconfirm
+          wf-pacman -S --noconfirm --needed wf-tools target-gba target-gba-libtonc
+      - name: Build
+        run: |
+          export PATH=/opt/wonderful/bin:$PATH
+          mkdir -p dist
+          cd game && make clean && make dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BulletStormRaiden-rom
+          path: dist/*.gba

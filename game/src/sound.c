@@ -41,7 +41,8 @@ typedef struct { const u8 *p, *start; u16 rem; u16 gate; u8 active; } Chan;
 static Chan ch[4];
 static const Song *cur;
 static int cur_id = -1, req_id = -1;
-static const u8 sfx_priority[] = { 0, 3, 5, 2, 4, 4, 6, 1, 2, 1, 5, 0 };
+static const u8 sfx_priority[] = { 0, 3, 5, 2, 4, 4, 6, 1, 2, 1, 5, 0, 5 };
+static u32 song_ft;                  // frames since the song started (bar position for music_swap)
 static int steal[4];                 // PSG-only: frames a channel is used by an SFX
 
 static void load_wave(int w)
@@ -74,7 +75,7 @@ void music_stop(void)
 
 static int style_map(int id)
 {
-    if (id == MUS_W1 || id == MUS_W1_DREAM || id == MUS_W1_NIGHT) {
+    if (id == MUS_W1 || id == MUS_W1_DREAM || id == MUS_W1_NIGHT || id == MUS_W1_UNEASY) {
         if (g_set[S_MSTYLE] == 1) return MUS_W1_DREAM;
         if (g_set[S_MSTYLE] == 2) return MUS_W1_NIGHT;
     }
@@ -90,6 +91,31 @@ void music_play(int id)
     cur = &songs[real]; cur_id = real;
     load_wave(cur->wave);
     for (int i = 0; i < 4; i++) { ch[i].p = ch[i].start = cur->ch[i]; ch[i].rem = 0; ch[i].gate = 0; ch[i].active = 1; }
+    song_ft = 0;
+}
+static void note_on(int c, int n, int frames);
+// SHIFT: jump to another arrangement of the same leitmotif at the same bar/row (all World 1 / boss
+// variants share their song length in rows), so the music "flips" instead of restarting
+void music_swap(int id)
+{
+    if (!cur || !cur->loop || style_map(id) == cur_id) { music_play(id); return; }
+    u32 row = song_ft / cur->rows;
+    music_play(id);
+    if (!cur) return;
+    u32 total = 0;
+    for (const u8 *p = cur->ch[0]; p[0] != 255; p += 2) total += p[1];
+    if (total) row %= total;
+    for (int c = 0; c < 4; c++) {
+        const u8 *p = cur->ch[c]; u32 acc = 0;
+        while (p[0] != 255 && acc + p[1] <= row) { acc += p[1]; p += 2; }
+        ch[c].p = p; ch[c].rem = 0;
+        if (p[0] != 255 && acc < row) {
+            int n = p[0], left = p[1] - (row - acc);
+            ch[c].p = p + 2; ch[c].rem = left * cur->rows;
+            if (n && c != 3) note_on(c, n, ch[c].rem);
+        }
+    }
+    song_ft = row * cur->rows;
 }
 int music_current(void) { return req_id >= 0 ? req_id : cur_id; }
 void music_restyle(void) { if (req_id >= 0) { int r = req_id; if (style_map(r) != cur_id) { cur_id = -2; music_play(r); } } }
@@ -173,6 +199,7 @@ static void music_tick(void)
         if (++v->cnt >= v->per) { v->cnt = 0; if (v->dir) { if (v->vol < 15) v->vol++; } else if (v->vol > 0) v->vol--; }
     }
     if (!cur) return;
+    song_ft++;
     int alive = 0;
     for (int c = 0; c < 4; c++) {
         Chan *k = &ch[c];
@@ -197,7 +224,7 @@ static void music_tick(void)
 
 // ---------------------------------------------------------------- PSG-only SFX recipes
 typedef struct { u8 c; u8 frames; u16 sweep, cnt, freq; } PsgSfx;
-static const PsgSfx psfx[12] = {
+static const PsgSfx psfx[13] = {
     { 0, 4,  0x001A, 0xA180, 1800 },   // shot
     { 3, 20, 0,      0xF200, 0x0055 }, // explode
     { 3, 50, 0,      0xF500, 0x0067 }, // big explode
@@ -210,6 +237,7 @@ static const PsgSfx psfx[12] = {
     { 0, 6,  0x0012, 0xB180, 1850 },   // coin
     { 0, 30, 0x0008, 0xF0C0, 1500 },   // warning
     { 3, 3,  0,      0x8100, 0x0011 }, // enemy hit
+    { 0, 22, 0x0016, 0xD280, 1100 },   // shift (rising sweep)
 };
 
 void sfx(int id)

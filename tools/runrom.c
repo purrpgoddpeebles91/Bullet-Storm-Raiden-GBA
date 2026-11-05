@@ -47,6 +47,9 @@ int main(int argc,char**argv){
   else if(!strcmp(cmd,"press")){run(parsekeys(a),3);run(0,3);}
   else if(!strcmp(cmd,"shot"))shot(a);
   else if(!strcmp(cmd,"wav"))wav_open(a);
-  else if(!strcmp(cmd,"wavend"))wav_close();}
+  else if(!strcmp(cmd,"wavend"))wav_close();
+  else if(!strcmp(cmd,"peek")){ /* peek HEXADDR NWORDS : print u32 words from the bus (e.g. g_stats) */
+    unsigned addr=strtoul(a,0,16); printf("peek %08x:",addr); for(int i=0;i<(n?n:1);i++) printf(" %u",core->busRead32(core,addr+i*4)); printf("\n");}
+ }
  wav_close();
  core->deinit(core);return 0;}
